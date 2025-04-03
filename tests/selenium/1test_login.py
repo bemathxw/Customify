@@ -27,15 +27,15 @@ class TestLogin():
     self.driver.find_element(By.ID, "login-password").send_keys("testpassword1!")
     
     wait = WebDriverWait(self.driver, 10)
-    # Нажимаем на кнопку "Log In"
+
     login_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".ButtonInner-sc-14ud5tc-0")))
     login_button.click()
-    print("Нажал на логин")
+    print("clicked login button")
     time.sleep(2)
-    # Нажимаем на кнопку "Continue"
+
     continue_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".ButtonInner-sc-14ud5tc-0")))
     continue_button.click()
-    print("Нажал на продолжить")
+    print("clicked continue button")
     time.sleep(2)
     expected_url = "http://127.0.0.1:5000/spotify/recommendations"  # redirect if login is successful
     assert self.driver.current_url == expected_url, f"Expected URL: {expected_url}, but got {self.driver.current_url}"

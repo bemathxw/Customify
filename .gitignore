@@ -1,0 +1,5 @@
+.env 
+recommendations
+venv/
+__pycache__/
+features/

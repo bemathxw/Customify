@@ -6,6 +6,25 @@
     <title>Profile</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #3498db;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
 
@@ -31,55 +50,143 @@
             <a href="{{ url_for('spotify.login_spotify') }}" class="btn btn-primary mt-4 spotic">Login with Spotify</a>
         </div>
     {% else %}
-        <!-- Показать топ треки и рекомендации -->
+        <!-- Показать топ треки -->
         <h2>Top Tracks</h2>
-    <div class="track-list">
-        {% for track in top_tracks %}
-        <div class="track-item">
-            <a href="spotify:track:{{ track.id }}" target="_blank">
-                <img src="{{ track.album.images[0].url }}" alt="{{ track.name }} cover" class="track-cover">
-            </a>
-            <div class="track-info">
-                <a href="spotify:track:{{ track.id }}" target="_blank" class="track-name">{{ track.name }}</a>
-                <a href="spotify:artist:{{ track.artists[0].id }}" target="_blank" class="artist-name">{{ track.artists[0].name }}</a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-
-        <h2>Recommended Tracks</h2>
         <div class="track-list">
-            {% for track in recommendations %}
-                <div class="track-item">
-            <a href="spotify:track:{{ track.id }}" target="_blank">
-                <img src="{{ track.album.images[0].url }}" alt="{{ track.name }} cover" class="track-cover">
-                    </a>
-            <div class="track-info">
-                <a href="spotify:track:{{ track.id }}" target="_blank" class="track-name">{{ track.name }}</a>
-                <a href="spotify:artist:{{ track.artists[0].id }}" target="_blank" class="artist-name">{{ track.artists[0].name }}</a>
-            </div>
+            {% for track in top_tracks %}
+            <div class="track-item">
+                <a href="spotify:track:{{ track.id }}" target="_blank">
+                    <img src="{{ track.album.images[0].url }}" alt="{{ track.name }} cover" class="track-cover">
+                </a>
+                <div class="track-info">
+                    <a href="spotify:track:{{ track.id }}" target="_blank" class="track-name">{{ track.name }}</a>
+                    <a href="spotify:artist:{{ track.artists[0].id }}" target="_blank" class="artist-name">{{ track.artists[0].name }}</a>
                 </div>
+            </div>
             {% endfor %}
         </div>
 
-            <a href="{{ url_for('recommendations.customize_recommendations') }}" class="btn btn-primary mt-4 marg">Customize Recommendations</a>
-                <form method="POST" action="/add-to-playlist">
-    <button type="submit" class="btn btn-primary mt-4">Add All to Playlist</button>
-</form>
-    {% if premium_user %}
-    <form action="{{ url_for('spotify.add_recommendations_to_queue') }}" method="post">
-            <button type="submit" class="btn btn-primary mt-4">Add All Recommended Tracks to Queue</button>
-        </form>
-    {% else %}
+        <!-- Секция рекомендаций с загрузчиком -->
+        <h2>Recommended Tracks</h2>
+        <div id="recommendations-container">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <!-- Кнопки действий будут показаны после загрузки рекомендаций -->
+        <div id="action-buttons" style="display: none;">
+            <form method="POST" action="/add-to-playlist">
+                <button type="submit" class="btn btn-primary mt-4">Add All to Playlist</button>
+            </form>
+            {% if premium_user %}
+            <form action="{{ url_for('spotify.add_recommendations_to_queue') }}" method="post">
+                <button type="submit" class="btn btn-primary mt-4">Add All Recommended Tracks to Queue</button>
+            </form>
+            {% else %}
             <!-- Неактивная кнопка, если пользователь без премиума -->
             <div class="alert alert-warning">
                 You need Spotify Premium to add tracks to your queue.
             </div>
             <button type="button" class="btn btn-primary mt-4" disabled>Add All Recommended Tracks to Queue</button>
-    {% endif %}
-
+            {% endif %}
+        </div>
     {% endif %}
 </div>
+
+<!-- JavaScript для асинхронной загрузки рекомендаций -->
+<script>
+    // Загружаем рекомендации только после полной загрузки страницы
+    window.addEventListener('load', function() {
+        console.log("Starting to fetch recommendations...");
+        fetchRecommendations();
+    });
+
+    function fetchRecommendations() {
+        // Показываем спиннер
+        document.querySelector('.loading-spinner').style.display = 'flex';
+        
+        fetch('/get-recommendations')
+            .then(response => {
+                console.log("Response status:", response.status);
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Network response was not ok');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Received data:", data);
+                
+                // Скрываем спиннер
+                document.querySelector('.loading-spinner').style.display = 'none';
+                
+                // Проверяем, что данные не пустые
+                if (!data || data.length === 0) {
+                    throw new Error('No recommendations received');
+                }
+                
+                // Создаем HTML для рекомендаций
+                const container = document.getElementById('recommendations-container');
+                const trackList = document.createElement('div');
+                trackList.className = 'track-list';
+                
+                data.forEach(track => {
+                    const trackItem = document.createElement('div');
+                    trackItem.className = 'track-item';
+                    
+                    const trackLink = document.createElement('a');
+                    trackLink.href = 'spotify:track:' + track.id;
+                    trackLink.target = '_blank';
+                    
+                    const trackImage = document.createElement('img');
+                    trackImage.src = track.album_image;
+                    trackImage.alt = track.name + ' cover';
+                    trackImage.className = 'track-cover';
+                    
+                    trackLink.appendChild(trackImage);
+                    trackItem.appendChild(trackLink);
+                    
+                    const trackInfo = document.createElement('div');
+                    trackInfo.className = 'track-info';
+                    
+                    const trackNameLink = document.createElement('a');
+                    trackNameLink.href = 'spotify:track:' + track.id;
+                    trackNameLink.target = '_blank';
+                    trackNameLink.className = 'track-name';
+                    trackNameLink.textContent = track.name;
+                    
+                    const artistNameLink = document.createElement('a');
+                    artistNameLink.href = 'spotify:artist:' + track.artist_id;
+                    artistNameLink.target = '_blank';
+                    artistNameLink.className = 'artist-name';
+                    artistNameLink.textContent = track.artist;
+                    
+                    trackInfo.appendChild(trackNameLink);
+                    trackInfo.appendChild(artistNameLink);
+                    trackItem.appendChild(trackInfo);
+                    
+                    trackList.appendChild(trackItem);
+                });
+                
+                container.appendChild(trackList);
+                
+                // Показываем кнопки действий
+                document.getElementById('action-buttons').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error fetching recommendations:', error);
+                
+                // Скрываем спиннер
+                document.querySelector('.loading-spinner').style.display = 'none';
+                
+                const container = document.getElementById('recommendations-container');
+                container.innerHTML = '<div class="alert alert-danger">Failed to load recommendations: ' + 
+                                     error.message + '. Please try refreshing the page.</div>';
+            });
+    }
+</script>
 
 </body>
 </html>

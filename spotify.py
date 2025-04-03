@@ -1,13 +1,25 @@
 import requests
 import time
+import logging
+from datetime import datetime
 from flask import Blueprint, redirect, request, session, url_for, flash, render_template
 from urllib.parse import urlencode
+import os
+import random
+
+# Logging setup
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 spotify_bp = Blueprint('spotify', __name__)
 
-# Spotify OAuth2 настройки
-SPOTIFY_CLIENT_ID = "432705662cc1443baa6faf1fa22171a2"
-SPOTIFY_CLIENT_SECRET = "64824fc6b85e4bbd9740808743442d8c"
+# Spotify OAuth2 settings
+SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
+SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
 SPOTIFY_REDIRECT_URI = "http://127.0.0.1:5000/spotify/callback"
 
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
@@ -18,25 +30,29 @@ SHOW_DIALOG = "true"
 
 @spotify_bp.route('/clear')
 def clear_spotify_tokens():
-    """Очищаем все токены Spotify из сессии"""
+    """Clear all Spotify tokens from session"""
+    logger.info("Clearing Spotify tokens from session")
     session.pop('spotify_token', None)
     session.pop('spotify_refresh_token', None)
     session.pop('spotify_token_expires_in', None)
-    print("Spotify tokens cleared from session.")
+    logger.info("Spotify tokens cleared from session")
     return redirect('profile')
 
 
 def is_token_expired():
     expires_at = session.get('spotify_token_expires_in')
-    return expires_at and time.time() > expires_at
+    is_expired = expires_at and time.time() > expires_at
+    logger.info(f"Checking if token is expired: {is_expired}")
+    return is_expired
 
 
 def refresh_spotify_token():
-    """Обновляем access_token с помощью refresh_token"""
+    """Refresh access_token using refresh_token"""
+    logger.info("Attempting to refresh Spotify token")
     refresh_token = session.get('spotify_refresh_token')
 
     if not refresh_token:
-        print("No refresh token available. Clearing session and redirecting to login.")
+        logger.warning("No refresh token available. Clearing session and redirecting to login.")
         clear_spotify_tokens()
         return redirect(url_for('spotify.login_spotify'))
 
@@ -47,23 +63,24 @@ def refresh_spotify_token():
         "client_secret": SPOTIFY_CLIENT_SECRET
     }
 
+    logger.info("Sending refresh token request to Spotify")
     response = requests.post(SPOTIFY_TOKEN_URL, data=payload)
     response_data = response.json()
 
     if response.status_code != 200:
-        print(f"Failed to refresh token: {response_data}. Clearing session and redirecting to login.")
+        logger.error(f"Failed to refresh token: {response_data}. Clearing session and redirecting to login.")
         clear_spotify_tokens()
         return False
 
-    # Обновляем токен в сессии
+    # Update token in session
     session['spotify_token'] = response_data['access_token']
     session['spotify_token_expires_in'] = time.time() + response_data['expires_in']
-    print("Token refreshed successfully.")
+    logger.info("Token refreshed successfully")
     return True
 
 
 def get_headers():
-    """Возвращаем заголовки с токеном для Spotify API, обновляем токен при необходимости"""
+    """Return headers with token for Spotify API, refresh token if necessary"""
     if 'spotify_token' not in session:
         print("No token found in session, redirecting to login.")
         return None
@@ -82,6 +99,7 @@ def get_headers():
 
 @spotify_bp.route('/login-spotify')
 def login_spotify():
+    logger.info("Initiating Spotify login process")
     auth_query_parameters = {
         "response_type": "code",
         "redirect_uri": SPOTIFY_REDIRECT_URI,
@@ -91,14 +109,17 @@ def login_spotify():
     }
     url_args = urlencode(auth_query_parameters)
     auth_url = f"{SPOTIFY_AUTH_URL}/?{url_args}"
+    logger.info(f"Redirecting to Spotify auth URL: {auth_url}")
     return redirect(auth_url)
 
 
 @spotify_bp.route('/spotify/callback')
 def callback():
+    logger.info("Received callback from Spotify")
     auth_token = request.args.get('code')
 
     if not auth_token:
+        logger.error("Authorization failed. No code provided.")
         flash("Authorization failed. No code provided.", "error")
         return redirect(url_for('profile'))
 
@@ -110,95 +131,175 @@ def callback():
         "client_secret": SPOTIFY_CLIENT_SECRET
     }
 
+    logger.info("Exchanging auth code for access token")
     response = requests.post(SPOTIFY_TOKEN_URL, data=payload)
     response_data = response.json()
 
     if response.status_code != 200:
+        logger.error(f"Failed to authenticate with Spotify: {response_data}")
         flash(f"Failed to authenticate with Spotify: {response_data}", "error")
         return redirect(url_for('profile'))
 
-    # Сохраняем токен в сессии
+    # Save token in session
     session['spotify_token'] = response_data['access_token']
     session['spotify_refresh_token'] = response_data.get('refresh_token')
     session['spotify_token_expires_in'] = time.time() + response_data['expires_in']
+    logger.info("Successfully authenticated with Spotify")
 
-    # Перенаправляем на страницу рекомендаций
+    # Redirect to recommendations page
+    logger.info("Redirecting to recommendations page")
     return redirect(url_for('spotify.spotify_recommendations'))
 
 
-
 def get_top_tracks():
+    """Get user's top tracks"""
     headers = get_headers()
     if not headers:
-        print("No headers found, returning empty list")
         return []
 
-    top_tracks_url = f"{SPOTIFY_API_BASE_URL}/me/top/tracks?limit=10&time_range=short_term"
+    # Check cache in session
+    cache_key = 'cached_top_tracks'
+    cache_time_key = 'cached_top_tracks_time'
+    current_time = time.time()
+    
+    # Use cache if it exists and is less than 1 hour old
+    if cache_key in session and cache_time_key in session:
+        if current_time - session[cache_time_key] < 3600:  # 1 hour = 3600 seconds
+            print("Using cached top tracks in get_top_tracks")
+            return session[cache_key]
+
+    # Get top tracks
+    top_tracks_url = f"{SPOTIFY_API_BASE_URL}/me/top/tracks?time_range=short_term&limit=10"
     response = requests.get(top_tracks_url, headers=headers)
-
-    if response.status_code == 401:
-        print("Token expired, refreshing...")
-        if refresh_spotify_token():
-            headers = get_headers()
-            response = requests.get(top_tracks_url, headers=headers)
-
-    if response.status_code == 200:
-        print(f"Top tracks response: ok")
-        return response.json().get('items')
-    else:
+    
+    if response.status_code != 200:
         print(f"Error fetching top tracks: {response.status_code}, {response.text}")
         return []
+    
+    top_tracks = response.json().get('items', [])
+    
+    # Save to cache
+    session[cache_key] = top_tracks
+    session[cache_time_key] = current_time
+    
+    return top_tracks
 
 
-
-
-# Получение рекомендаций на основе треков пользователя
+# Get recommendations based on user's tracks
 def get_recommendations(track_ids):
-    """Получаем рекомендации на основе треков пользователя"""
+    """Get recommendations from random tracks of all artists in top-10"""
     headers = get_headers()
     if not headers:
-        return [] 
-
-    # Ограничиваем количество seed_tracks до 5
-    track_ids = track_ids[:5]
-    seed_tracks = ','.join(track_ids)
-    recommendations_url = f"{SPOTIFY_API_BASE_URL}/recommendations?seed_tracks={seed_tracks}&limit=10"
-
-    response = requests.get(recommendations_url, headers=headers)
-
-    if response.status_code == 200:
-        tracks = response.json().get('tracks')
-        track_ids_only = [track['id'] for track in tracks]
-        session['recommended_tracks'] = None
-        session['recommended_tracks'] = track_ids_only
-        return tracks
-
-    else:
-        print(f"Error fetching recommendations: {response.status_code}, {response.text}")
         return []
+
+    all_track_ids = []
+    processed_artists = set()  # To track already processed artists
+
+    # Go through each track from top-10
+    for track_id in track_ids:
+        # Get track information
+        track_url = f"{SPOTIFY_API_BASE_URL}/tracks/{track_id}"
+        track_response = requests.get(track_url, headers=headers)
+        
+        if track_response.status_code != 200:
+            print(f"Error fetching track info: {track_response.status_code}, {track_response.text}")
+            continue
+        
+        # Get artist ID
+        artist_id = track_response.json()['artists'][0]['id']
+        
+        # Skip if artist already processed
+        if artist_id in processed_artists:
+            continue
+        processed_artists.add(artist_id)
+        
+        # Get artist's albums
+        artist_albums_url = f"{SPOTIFY_API_BASE_URL}/artists/{artist_id}/albums"
+        albums_response = requests.get(artist_albums_url, headers=headers, params={'limit': 20})
+        
+        if albums_response.status_code != 200:
+            print(f"Error fetching artist albums: {albums_response.status_code}, {albums_response.text}")
+            continue
+        
+        # Collect tracks from albums
+        for album in albums_response.json().get('items', []):
+            album_tracks_url = f"{SPOTIFY_API_BASE_URL}/albums/{album['id']}/tracks"
+            tracks_response = requests.get(album_tracks_url, headers=headers)
+            
+            if tracks_response.status_code == 200:
+                album_tracks = tracks_response.json().get('items', [])
+                # Add only one random track from album
+                if album_tracks:
+                    random_track = random.choice(album_tracks)
+                    all_track_ids.append(random_track['id'])
+    
+    # Remove tracks that are already in user's top
+    all_track_ids = [tid for tid in all_track_ids if tid not in track_ids]
+    
+    # Select random 10 tracks
+    if len(all_track_ids) > 10:
+        selected_track_ids = random.sample(all_track_ids, 10)
+    else:
+        selected_track_ids = all_track_ids
+    
+    # Get full information about selected tracks
+    tracks_url = f"{SPOTIFY_API_BASE_URL}/tracks"
+    params = {
+        'ids': ','.join(selected_track_ids),
+        'market': 'US'
+    }
+    
+    response = requests.get(tracks_url, headers=headers, params=params)
+    
+    if response.status_code != 200:
+        print(f"Error fetching selected tracks: {response.status_code}, {response.text}")
+        return []
+    
+    tracks = response.json().get('tracks', [])
+    
+    # Save track IDs in session
+    session['recommended_tracks'] = [track['id'] for track in tracks]
+    
+    print(f"Generated {len(tracks)} random recommendations from multiple artists")
+    return tracks
 
 
 @spotify_bp.route('/spotify/recommendations')
 def spotify_recommendations():
+    logger.info("Accessing spotify recommendations page")
 
     if 'spotify_token' not in session:
+        logger.warning("No Spotify token in session")
         flash("You need to log in with Spotify to get recommendations.", "error")
         return redirect(url_for('spotify.login_spotify'))
 
+    logger.info("Fetching top tracks for user")
     top_tracks = get_top_tracks()
 
     if not top_tracks:
+        logger.error("Failed to get top tracks from Spotify")
         flash("Failed to get your top tracks from Spotify.", "error")
         return redirect(url_for('profile'))
 
+    logger.info(f"Successfully fetched {len(top_tracks)} top tracks")
+    
+    # Check if user is a premium user
+    logger.info("Checking if user has Spotify Premium")
+    premium_user = is_premium_user()
+    logger.info(f"User premium status: {premium_user}")
+    
+    # Save track IDs in session for later use
     track_ids = [track['id'] for track in top_tracks]
+    session['top_track_ids'] = track_ids
+    logger.info(f"Saved {len(track_ids)} top track IDs to session")
 
-    recommendations = get_recommendations(track_ids)
-
-    print(session.get('recommended_tracks', []))
-    print(session.get('recommended_tracks'))
-
-    return render_template('profile.html', top_tracks=top_tracks, recommendations=recommendations)
+    # Display page without recommendations, they will be loaded asynchronously
+    logger.info("Rendering profile page with top tracks, recommendations will load asynchronously")
+    return render_template('profile.html', 
+                          top_tracks=top_tracks, 
+                          recommendations=None,  # Recommendations will be loaded asynchronously
+                          show_login_button=False,
+                          premium_user=premium_user)
 
 @spotify_bp.route('/spotify/add_recommendations_to_queue', methods=['POST'])
 def add_recommendations_to_queue():
