@@ -3,3 +3,7 @@ recommendations
 venv/
 __pycache__/
 features/
+.flake8
+mypy.ini
+pyproject.toml
+.bandit
