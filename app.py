@@ -36,6 +36,16 @@ logger.info("Registered Spotify blueprint")
 # Home page
 @app.route("/", methods=["GET", "POST"])
 def home():
+    """
+    Render the home page of the application.
+    
+    Handles both GET and POST requests. For GET requests, it displays the home page.
+    For POST requests, it processes the submitted data and returns a JSON response.
+    
+    Returns:
+        For GET: Rendered home.html template
+        For POST: JSON response with status
+    """
     logger.info("Accessing home page")
     if request.method == "POST":
         logger.info("Processing POST request to home page")
@@ -47,7 +57,16 @@ def home():
 # Profile page
 @app.route("/profile")
 def profile():
-    """Display user profile or login button if no token exists"""
+    """
+    Display user profile or login button if no token exists.
+    
+    If the user is not authenticated with Spotify, shows a login button.
+    Otherwise, fetches and displays the user's top tracks from Spotify.
+    Also checks if the user has Spotify Premium to enable premium features.
+    
+    Returns:
+        Rendered profile.html template with appropriate context data
+    """
     logger.info("Accessing profile page")
 
     if "spotify_token" not in session:
@@ -105,6 +124,16 @@ def profile():
 # New endpoint for asynchronous loading of recommendations
 @app.route("/get-recommendations")
 def get_recommendations_async():
+    """
+    Asynchronously fetch music recommendations based on user's top tracks.
+    
+    This endpoint is called via AJAX to load recommendations without refreshing the page.
+    It uses the user's top tracks stored in the session to generate personalized
+    recommendations from Spotify API. Implements retry logic for rate limiting.
+    
+    Returns:
+        JSON response containing recommended tracks data or an empty list/error message
+    """
     logger.info("Async request for recommendations received")
 
     if "spotify_token" not in session:
@@ -239,6 +268,15 @@ def get_recommendations_async():
 # Close database connection
 @app.teardown_appcontext
 def close_db(exception):
+    """
+    Close database connection at the end of the request.
+    
+    This function is automatically called when the application context ends.
+    It ensures that database connections are properly closed.
+    
+    Args:
+        exception: The exception that caused the context to end, if any
+    """
     logger.debug("Closing database connection")
     db = g.pop("db", None)
     if db is not None:
@@ -247,6 +285,12 @@ def close_db(exception):
 
 @app.before_request
 def log_request_info():
+    """
+    Log information about each incoming request.
+    
+    This function runs before each request is processed. It logs the request method,
+    path, client IP address, and optionally headers and form/JSON data for debugging.
+    """
     logger.info(f"Request: {request.method} {request.path} from {request.remote_addr}")
     logger.debug(f"Headers: {request.headers}")
     if request.method == "POST":
