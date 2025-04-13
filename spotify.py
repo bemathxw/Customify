@@ -41,6 +41,12 @@ def clear_spotify_tokens():
 
 
 def is_token_expired():
+    """
+    Check if the current Spotify token has expired.
+    
+    Returns:
+        bool: True if token is expired or doesn't exist, False otherwise
+    """
     expires_at = session.get("spotify_token_expires_in")
     is_expired = expires_at and time.time() > expires_at
     logger.info(f"Checking if token is expired: {is_expired}")
@@ -48,7 +54,15 @@ def is_token_expired():
 
 
 def refresh_spotify_token():
-    """Refresh access_token using refresh_token"""
+    """
+    Refresh access_token using refresh_token.
+    
+    Attempts to use the stored refresh token to obtain a new access token
+    from Spotify's API.
+    
+    Returns:
+        bool: True if token was successfully refreshed, False otherwise
+    """
     logger.info("Attempting to refresh Spotify token")
     refresh_token = session.get("spotify_refresh_token")
 
@@ -85,7 +99,15 @@ def refresh_spotify_token():
 
 
 def get_headers():
-    """Return headers with token for Spotify API, refresh token if necessary"""
+    """
+    Return headers with token for Spotify API, refresh token if necessary.
+    
+    Checks if a valid token exists, refreshes it if expired, and returns
+    properly formatted authorization headers for Spotify API requests.
+    
+    Returns:
+        dict: Headers dictionary with Bearer token or None if authentication failed
+    """
     if "spotify_token" not in session:
         print("No token found in session, redirecting to login.")
         return None
@@ -155,7 +177,15 @@ def callback():
 
 
 def get_top_tracks():
-    """Get user's top tracks"""
+    """
+    Get user's top tracks from Spotify.
+    
+    Fetches the user's top tracks from Spotify API with caching for performance.
+    Uses short-term listening history and limits to 10 tracks.
+    
+    Returns:
+        list: List of track objects from Spotify API or empty list if request fails
+    """
     headers = get_headers()
     if not headers:
         return []
@@ -192,7 +222,20 @@ def get_top_tracks():
 
 # Get recommendations based on user's tracks
 def get_recommendations(track_ids):
-    """Get recommendations from random tracks of all artists in top-10"""
+    """
+    Get recommendations from random tracks of all artists in top-10.
+    
+    For each artist in the user's top tracks, this function:
+    1. Gets the artist's albums
+    2. Selects one random track from each album
+    3. Returns up to 10 random tracks from these selections
+    
+    Args:
+        track_ids (list): List of Spotify track IDs to use as seed
+        
+    Returns:
+        list: List of recommended track objects or empty list if request fails
+    """
     headers = get_headers()
     if not headers:
         return []
@@ -358,7 +401,15 @@ def add_recommendations_to_queue():
 
 
 def is_premium_user():
-
+    """
+    Check if the current user has a Spotify Premium subscription.
+    
+    Makes an API call to Spotify to get the user's profile and checks
+    the subscription type.
+    
+    Returns:
+        bool: True if user has Premium subscription, False otherwise
+    """
     user_profile_url = "https://api.spotify.com/v1/me"
     headers = get_headers()
     response = requests.get(user_profile_url, headers=headers)
@@ -372,6 +423,15 @@ def is_premium_user():
 
 
 def create_playlist(headers):
+    """
+    Create a new private playlist for the current user.
+    
+    Args:
+        headers (dict): Authorization headers for Spotify API
+        
+    Returns:
+        str: ID of the created playlist or None if creation failed
+    """
     user_data = get_current_user(headers)
     if not user_data:
         return None
@@ -399,6 +459,17 @@ def create_playlist(headers):
 
 
 def add_tracks_to_playlist(playlist_id, track_uris, headers):
+    """
+    Add tracks to a specified Spotify playlist.
+    
+    Args:
+        playlist_id (str): Spotify playlist ID
+        track_uris (list): List of Spotify track URIs to add
+        headers (dict): Authorization headers for Spotify API
+        
+    Returns:
+        None
+    """
     add_tracks_url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
     payload = {"uris": track_uris}
 
@@ -440,6 +511,15 @@ def add_to_playlist():
 
 
 def get_current_user(headers):
+    """
+    Get the current user's Spotify profile information.
+    
+    Args:
+        headers (dict): Authorization headers for Spotify API
+        
+    Returns:
+        dict: User profile data or None if request fails
+    """
     user_profile_url = f"{SPOTIFY_API_BASE_URL}/me"
     response = requests.get(user_profile_url, headers=headers)
 
