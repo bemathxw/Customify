@@ -45,6 +45,40 @@ This web application allows users to get personalized music recommendations base
 
 To make the app work, you need to create an application in the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard/) and get a Client ID and Client Secret.
 
+## Code Documentation Guidelines
+
+When contributing to this project, please follow these documentation guidelines:
+
+1. All functions should be documented using PEP 257 docstring conventions.
+2. Use triple double quotes (`"""`) for docstrings.
+3. Include a brief description of what the function does.
+4. Document all parameters using the `Args:` section.
+5. Document return values using the `Returns:` section.
+6. Document exceptions raised using the `Raises:` section (if applicable).
+
+Example:
+```python
+def get_recommendations(track_ids):
+    """
+    Get recommendations from random tracks of all artists in top-10.
+    
+    For each artist in the user's top tracks, this function:
+    1. Gets the artist's albums
+    2. Selects one random track from each album
+    3. Returns up to 10 random tracks from these selections
+    
+    Args:
+        track_ids (list): List of Spotify track IDs to use as seed
+        
+    Returns:
+        list: List of recommended track objects or empty list if request fails
+        
+    Raises:
+        ConnectionError: If unable to connect to Spotify API
+    """
+    # Function implementation
+```
+
 ---
 
 # Customify
@@ -93,3 +127,37 @@ To make the app work, you need to create an application in the [Spotify Develope
 ## Отримання Spotify API ключів
 
 Для роботи додатку вам потрібно створити додаток у [Spotify Developer Dashboard](https://developer.spotify.com/dashboard/) та отримати Client ID і Client Secret.
+
+## Рекомендації щодо документування коду
+
+При внесенні змін до цього проекту, будь ласка, дотримуйтесь наступних рекомендацій з документування:
+
+1. Всі функції повинні бути документовані згідно з конвенціями PEP 257.
+2. Використовуйте потрійні подвійні лапки (`"""`) для документаційних рядків.
+3. Включайте короткий опис того, що робить функція.
+4. Документуйте всі параметри, використовуючи розділ `Args:`.
+5. Документуйте значення, що повертаються, використовуючи розділ `Returns:`.
+6. Документуйте винятки, що виникають, використовуючи розділ `Raises:` (якщо застосовно).
+
+Приклад:
+```python
+def get_recommendations(track_ids):
+    """
+    Get recommendations from random tracks of all artists in top-10.
+    
+    For each artist in the user's top tracks, this function:
+    1. Gets the artist's albums
+    2. Selects one random track from each album
+    3. Returns up to 10 random tracks from these selections
+    
+    Args:
+        track_ids (list): List of Spotify track IDs to use as seed
+        
+    Returns:
+        list: List of recommended track objects or empty list if request fails
+        
+    Raises:
+        ConnectionError: If unable to connect to Spotify API
+    """
+    # Реалізація функції
+```
