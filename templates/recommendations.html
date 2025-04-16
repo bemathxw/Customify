@@ -51,5 +51,40 @@
 
 
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Загрузка рекомендаций при загрузке страницы
+            loadRecommendations();
+            
+            // Обработчик для кнопки обновления рекомендаций
+            document.getElementById('refresh-recommendations').addEventListener('click', function() {
+                loadRecommendations();
+            });
+        });
+        
+        function loadRecommendations() {
+            showLoader();
+            
+            fetch('/api/recommendations')  // Изменено с '/get-recommendations' на '/api/recommendations'
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.message || `HTTP error! status: ${response.status}`);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    hideLoader();
+                    displayRecommendations(data);
+                })
+                .catch(error => {
+                    hideLoader();
+                    showError(`Failed to load recommendations: ${error.message}`);
+                });
+        }
+        
+        // ... остальной код ...
+    </script>
 </body>
 </html>

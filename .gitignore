@@ -7,3 +7,4 @@ features/
 mypy.ini
 pyproject.toml
 .bandit
+logs/

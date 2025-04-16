@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Error - Customify{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <h1>Oops! Something went wrong</h1>
+    
+    <div class="error-details">
+        <p class="error-message">{{ error.message }}</p>
+        
+        <div class="error-meta">
+            <p><strong>Error ID:</strong> {{ error.error_id }}</p>
+            <p><strong>Error Code:</strong> {{ error.error_code }}</p>
+            <p><strong>Time:</strong> {{ error.timestamp }}</p>
+        </div>
+        
+        <div class="error-actions">
+            <a href="/" class="btn btn-primary">Go to Home Page</a>
+            <a href="javascript:history.back()" class="btn btn-secondary">Go Back</a>
+        </div>
+        
+        <div class="error-help">
+            <p>If this problem persists, please contact support with the Error ID above.</p>
+        </div>
+    </div>
+</div>
+{% endblock %} 

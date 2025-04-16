@@ -33,9 +33,10 @@
         <a href="{{ url_for('home') }}">LOGO</a>
     </div>
     {% if show_login_button %}
+    <!-- Не должно быть ссылок на logout здесь -->
     {% else %}
     <div class="auth-buttons">
-        <a href="{{ url_for('spotify.clear_spotify_tokens') }}">Logout</a>
+        <a href="{{ url_for('spotify.logout') }}">Logout</a>
     </div>
     {% endif %}
 </header>
@@ -47,7 +48,7 @@
     {% if show_login_button %}
         <!-- Кнопка для входа в Spotify -->
         <div class="d-flex justify-content-center">
-            <a href="{{ url_for('spotify.login_spotify') }}" class="btn btn-primary mt-4 spotic">Login with Spotify</a>
+            <a href="{{ url_for('spotify.login') }}" class="btn btn-primary mt-4 spotic">Login with Spotify</a>
         </div>
     {% else %}
         <!-- Показать топ треки -->
