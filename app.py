@@ -16,6 +16,14 @@ from spotify_api import get_recommendations, get_top_tracks, is_premium_user, ge
 from spotify import spotify_bp
 import jinja2
 
+# Импортируем систему профилирования
+from profiling import (
+    init_profiling_middleware, timed, CPUProfiler, MemoryProfiler,
+    get_timing_metrics, APIProfiler, start_resource_monitoring,
+    stop_resource_monitoring, get_resource_metrics_summary,
+    get_user_metrics
+)
+
 # Enhanced logging setup
 def setup_logging():
     """
@@ -125,6 +133,9 @@ logger.info("Initializing Flask application")
 # Register Spotify blueprint
 app.register_blueprint(spotify_bp, url_prefix="/spotify")
 logger.info("Registered Spotify blueprint")
+
+# Initialize profiling middleware
+init_profiling_middleware(app)
 
 # Enhanced context for logging
 class ContextualLogger:
@@ -719,6 +730,82 @@ def init_app():
     sys.excepthook = handle_uncaught_exception
     
     logger.info("Application initialized with comprehensive exception handling")
+
+# Вместо @app.before_first_request используйте with app.app_context()
+# или создайте функцию, которая будет вызываться при запуске приложения
+
+# Вариант 1: Использование with app.app_context()
+def init_app_resources():
+    """Initialize application resources like monitoring."""
+    start_resource_monitoring(interval=10.0, log_to_console=False)
+    logger.info("Resource monitoring started")
+
+# Вызов функции при запуске приложения
+with app.app_context():
+    init_app_resources()
+
+# Вариант 2: Использование события first_request
+@app.before_request
+def before_first_request_handler():
+    """Start resource monitoring on first request."""
+    if not hasattr(app, '_got_first_request'):
+        app._got_first_request = True
+        start_resource_monitoring(interval=10.0, log_to_console=False)
+        logger.info("Resource monitoring started on first request")
+
+# Add profiling dashboard route (admin only)
+@app.route('/admin/profiling', methods=['GET'])
+def profiling_dashboard():
+    """
+    Display profiling metrics dashboard.
+    
+    This route is for administrators only and shows performance metrics
+    collected by the profiling tools.
+    
+    Returns:
+        HTML page with profiling metrics
+    """
+    # In a real app, you would add authentication here
+    # if not current_user.is_admin:
+    #     return redirect(url_for('login'))
+    
+    # Get metrics
+    timing_metrics = get_timing_metrics()
+    api_metrics = APIProfiler.get_metrics()
+    resource_metrics = get_resource_metrics_summary()
+    user_metrics = get_user_metrics()
+    
+    return render_template(
+        'admin/profiling.html',
+        timing_metrics=timing_metrics,
+        api_metrics=api_metrics,
+        resource_metrics=resource_metrics,
+        user_metrics=user_metrics
+    )
+
+# Add API endpoint for metrics (for monitoring tools)
+@app.route('/api/metrics', methods=['GET'])
+def api_metrics():
+    """
+    Return performance metrics as JSON.
+    
+    This endpoint is designed to be consumed by monitoring tools.
+    
+    Returns:
+        JSON response with performance metrics
+    """
+    # In a real app, you would add authentication here
+    # if 'api_key' not in request.args or request.args['api_key'] != API_KEY:
+    #     return jsonify({"error": "Unauthorized"}), 401
+    
+    # Get metrics
+    metrics = {
+        'timing': get_timing_metrics(),
+        'api': APIProfiler.get_metrics(),
+        'resources': get_resource_metrics_summary()
+    }
+    
+    return jsonify(metrics)
 
 # Call initialization
 if __name__ == "__main__":

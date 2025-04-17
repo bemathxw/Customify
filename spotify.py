@@ -15,10 +15,17 @@ from spotify_api import (
     SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI, SPOTIFY_SCOPES
 )
 
+# Импортируем функции профилирования
+from profiling import profile_function, track_page_view, track_user_error, track_recommendation_interaction, track_playlist_interaction
+
+# Импортируем функции кеширования
+from cache import clear_cache_for_function
+
 spotify_bp = Blueprint("spotify", __name__)
 
 # Routes
 @spotify_bp.route("/login")
+@profile_function
 def login():
     """
     Redirect user to Spotify authorization page.
@@ -31,6 +38,9 @@ def login():
     """
     logger.info("Initiating Spotify login")
     logger.debug(f"Session before login: {session}")
+    
+    # Отслеживаем взаимодействие пользователя
+    track_page_view("spotify_login")
     
     # Generate state parameter for security
     state = os.urandom(16).hex()
@@ -52,6 +62,7 @@ def login():
     return redirect(auth_url)
 
 @spotify_bp.route("/callback")
+@profile_function
 def callback():
     """
     Handle callback from Spotify authorization.
@@ -67,11 +78,18 @@ def callback():
     logger.debug(f"Callback request args: {request.args}")
     logger.debug(f"Session in callback: {session}")
     
+    # Отслеживаем взаимодействие пользователя
+    track_page_view("spotify_callback")
+    
     # Check for error
     if "error" in request.args:
         error = request.args.get("error")
         logger.error(f"Spotify auth error: {error}")
         flash(f"Authentication error: {error}", "error")
+        
+        # Отслеживаем ошибку
+        track_user_error("auth_error", error, "spotify_callback")
+        
         return redirect(url_for("profile"))
     
     # Verify state parameter
@@ -154,12 +172,18 @@ def logout():
         if key in session:
             session.pop(key)
     
+    # Очищаємо кеш для функцій, пов'язаних з користувачем
+    clear_cache_for_function("get_current_user")
+    clear_cache_for_function("get_top_tracks")
+    clear_cache_for_function("get_recommendations")
+    
     logger.info("User logged out")
     logger.debug(f"Session after logout: {session}")
     flash("You have been logged out.", "info")
     return redirect(url_for("profile"))
 
 @spotify_bp.route("/create-playlist", methods=["POST"])
+@profile_function
 def create_playlist():
     """
     Create a Spotify playlist with recommended tracks.
@@ -199,6 +223,10 @@ def create_playlist():
         
         if success:
             logger.info(f"Playlist '{playlist_name}' created successfully")
+            
+            # Отслеживаем создание плейлиста
+            track_playlist_interaction("create", track_count=len(track_uris))
+            
             return jsonify({
                 "success": True,
                 "message": "Playlist created successfully!"
@@ -210,6 +238,10 @@ def create_playlist():
             )
     except AppError as e:
         logger.error(f"Error creating playlist: {str(e)}", exc_info=True)
+        
+        # Отслеживаем ошибку
+        track_user_error("playlist_error", str(e))
+        
         return jsonify({
             "success": False,
             "error": str(e),
@@ -217,12 +249,17 @@ def create_playlist():
         }), 400
     except Exception as e:
         logger.error(f"Unexpected error creating playlist: {str(e)}", exc_info=True)
+        
+        # Отслеживаем ошибку
+        track_user_error("unexpected_error", str(e))
+        
         return jsonify({
             "success": False,
             "error": "An unexpected error occurred"
         }), 500
 
 @spotify_bp.route("/add-recommendations-to-queue", methods=["POST"])
+@profile_function
 def add_recommendations_to_queue():
     """
     Add recommended tracks to the user's Spotify queue.
@@ -240,13 +277,24 @@ def add_recommendations_to_queue():
         if "spotify_token" not in session:
             logger.warning("User not authenticated for queue addition")
             flash("You need to log in to add tracks to your queue", "error")
+            
+            # Отслеживаем ошибку
+            track_user_error("auth_error", "Not authenticated for queue addition")
+            
             return redirect(url_for('profile'))
         
         # Проверяем, является ли пользователь премиум-пользователем
         if not is_premium_user():
             logger.warning("Non-premium user attempted to add to queue")
             flash("You need Spotify Premium to add tracks to your queue", "error")
+            
+            # Отслеживаем ошибку
+            track_user_error("premium_required", "Non-premium user attempted to add to queue")
+            
             return redirect(url_for('profile'))
+        
+        # Отслеживаем взаимодействие с рекомендациями
+        track_recommendation_interaction("add_to_queue", track_ids=session.get("recommended_tracks", []))
         
         # В реальном приложении здесь должен быть код для добавления треков в очередь
         # Для этого нужно использовать Spotify API endpoint /me/player/queue
@@ -256,5 +304,44 @@ def add_recommendations_to_queue():
         return redirect(url_for('profile'))
     except Exception as e:
         logger.error(f"Error adding to queue: {str(e)}", exc_info=True)
+        
+        # Отслеживаем ошибку
+        track_user_error("queue_error", str(e))
+        
         flash(f"An error occurred: {str(e)}", "error")
         return redirect(url_for('profile'))
+
+# Добавляем новый маршрут для отслеживания взаимодействий с фронтенда
+@spotify_bp.route("/track-interaction", methods=["POST"])
+def track_interaction():
+    """
+    Endpoint для отслеживания взаимодействий пользователя с фронтенда.
+    
+    Returns:
+        JSON response с подтверждением
+    """
+    try:
+        data = request.json
+        
+        if not data or "type" not in data:
+            return jsonify({"error": "Invalid data"}), 400
+            
+        interaction_type = data["type"]
+        
+        if interaction_type == "button_click":
+            from profiling import track_button_click
+            track_button_click(data.get("button_id", "unknown"), data.get("page", "unknown"))
+        elif interaction_type == "form_submit":
+            from profiling import track_form_submit
+            track_form_submit(data.get("form_id", "unknown"), 
+                             data.get("form_data", {}), 
+                             data.get("page", "unknown"))
+        elif interaction_type == "error":
+            track_user_error(data.get("error_type", "unknown"), 
+                            data.get("error_message", "unknown error"), 
+                            data.get("page", "unknown"))
+        
+        return jsonify({"success": True})
+    except Exception as e:
+        logger.error(f"Error tracking interaction: {str(e)}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
