@@ -364,7 +364,7 @@ h3 {
 
 /* Стили для ползунков */
 input[type="range"] {
-    -webkit-appearance: none; /* Убираем стандартный стиль */
+
     width: 100%;
     height: 8px;
     background: #333; /* Синий цвет полоски, как у кнопки */
@@ -400,7 +400,7 @@ input[type="range"]:hover {
 }
 
 .slider {
-    -webkit-appearance: none; /* Убираем стандартный стиль */
+
     width: 100%;
     height: 8px;
     background: #333; /* Синий цвет полоски, как у кнопки */
@@ -475,4 +475,840 @@ input[type="checkbox"]:checked {
 
 .center1 {
     text-align: center;
+}
+
+/* Обновленные стили для плеера воспроизведения */
+#now-playing-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #181818;
+    border-top: 1px solid #282828;
+    color: #fff;
+    padding: 10px 0;
+    z-index: 1000;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.now-playing-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 16px;
+    max-width: 1200px;
+    margin: 0 auto;
+    height: 90px;
+}
+
+.now-playing-left {
+    flex: 0 0 30%;
+    display: flex;
+    align-items: center;
+}
+
+.now-playing-left img {
+    width: 56px;
+    height: 56px;
+    border-radius: 4px;
+    margin-right: 14px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.track-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.track-title-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.track-name-link {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.artist-links {
+    margin-top: 4px;
+}
+
+.artist-name-link {
+    color: #4a76a8; /* Синий цвет как в топ треках */
+    text-decoration: none;
+    font-size: 12px;
+    transition: color 0.2s ease;
+}
+
+
+
+.artist-name-link:hover {
+    color: #2a5885;
+    text-decoration: underline;
+}
+
+.explicit-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    background-color: #b3b3b3;
+    color: #121212;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 2px;
+}
+
+.now-playing-center {
+    flex: 0 0 40%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.player-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.control-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 8px;
+    width: 100%;
+}
+
+.control-button {
+    background: transparent;
+    border: none;
+    color: #b3b3b3;
+    cursor: pointer;
+    padding: 8px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.control-button:hover {
+    color: #fff;
+    transform: scale(1.06);
+}
+
+.control-button.active {
+    color: #1db954;
+}
+
+.play-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #fff;
+    color: #000;
+    margin: 0 8px;
+}
+
+.play-button:hover {
+    transform: scale(1.06);
+    background-color: #fff;
+    color: #000;
+}
+
+.progress-container {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.progress-container span {
+    font-size: 11px;
+    color: #b3b3b3;
+    width: 40px;
+    text-align: center;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 4px;
+    background-color: #535353;
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.progress {
+    height: 100%;
+    background-color: #b3b3b3;
+    border-radius: 2px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0%;
+    pointer-events: none;
+}
+
+.progress-bar:hover .progress {
+    background-color: #1ed760;
+}
+
+.slider {
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: transparent;
+    outline: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    z-index: 10;
+    cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #fff;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #fff;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.progress-bar:hover .slider::-webkit-slider-thumb,
+.progress-bar:hover .slider::-moz-range-thumb {
+    opacity: 1;
+}
+
+.now-playing-right {
+    flex: 0 0 30%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.volume-container {
+    display: flex;
+    align-items: center;
+}
+
+.volume-slider-container {
+    position: relative;
+    width: 100px;
+    height: 4px;
+    background-color: #535353;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.volume-slider {
+    background-color: transparent;
+    position: relative;
+    z-index: 10;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    opacity: 0;
+}
+
+.volume-slider::-moz-range-thumb {
+    opacity: 0;
+}
+
+.volume-slider-container:hover .volume-slider::-webkit-slider-thumb,
+.volume-slider-container:hover .volume-slider::-moz-range-thumb {
+    opacity: 1;
+}
+
+.small-text {
+    font-size: 10px;
+    color: #b3b3b3;
+    margin-top: 8px;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .now-playing-container {
+        flex-direction: column;
+        height: auto;
+        padding: 12px;
+    }
+    
+    .now-playing-left,
+    .now-playing-center,
+    .now-playing-right {
+        flex: 0 0 100%;
+        width: 100%;
+        margin-bottom: 12px;
+    }
+    
+    .now-playing-left {
+        justify-content: flex-start;
+    }
+    
+    .now-playing-right {
+        align-items: center;
+    }
+    
+    .control-buttons {
+        gap: 12px;
+    }
+}
+
+/* Стили для кастомных прогресс-баров вместо слайдеров */
+
+/* Контейнер прогресс-бара трека */
+.progress-bar-container {
+    position: relative;
+    width: 100%;
+    height: 4px;
+    background-color: #535353;
+    border-radius: 2px;
+    cursor: pointer;
+    margin: 0 12px;
+}
+
+/* Фон прогресс-бара (серый) */
+.progress-bar-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #535353;
+    border-radius: 2px;
+}
+
+/* Заполнение прогресс-бара (зеленое) */
+.progress-bar-fg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background-color: #1db954;
+    border-radius: 2px;
+    transition: width 0.1s ease;
+}
+
+/* Слой для наведения с эффектом при наведении */
+.progress-bar-hover {
+    position: absolute;
+    top: -4px;
+    left: 0;
+    width: 100%;
+    height: 12px;
+    opacity: 0;
+}
+
+/* Контейнер прогресс-бара при наведении */
+.progress-bar-container:hover .progress-bar-fg {
+    background-color: #1ed760;
+}
+
+.progress-bar-container:hover {
+    height: 6px;
+}
+
+/* Контейнер и бар громкости */
+.volume-bar-container {
+    position: relative;
+    width: 100px;
+    height: 4px;
+    background-color: #535353;
+    border-radius: 2px;
+    cursor: pointer;
+    margin-left: 8px;
+}
+
+.volume-bar-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #535353;
+    border-radius: 2px;
+}
+
+.volume-bar-fg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background-color: #fff;
+    border-radius: 2px;
+    transition: width 0.1s ease;
+}
+
+.volume-bar-hover {
+    position: absolute;
+    top: -4px;
+    left: 0;
+    width: 100%;
+    height: 12px;
+    opacity: 0;
+}
+
+.volume-bar-container:hover {
+    height: 6px;
+}
+
+.volume-bar-container:hover .volume-bar-fg {
+    background-color: #1ed760;
+}
+
+/* Адаптация для мобильных устройств */
+@media (max-width: 768px) {
+    .volume-bar-container {
+        width: 60px;
+    }
+    
+    .progress-container {
+        width: 100%;
+    }
+}
+
+/* Стиль для контейнера кнопки повтора и индикатора "1" */
+.repeat-button-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* Стиль для индикатора повтора одного трека */
+.repeat-one {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 10px;
+    font-weight: bold;
+    color: #1db954;
+    background-color: transparent;
+    display: none;
+}
+
+/* Показывать индикатор когда кнопка активна */
+.repeat-button.active-track .repeat-one {
+    display: block;
+}
+
+/* Стили для кнопок действий с треком */
+.track-actions {
+    display: flex;
+    margin-top: 8px;
+}
+
+.action-button {
+    background: transparent;
+    border: none;
+    color: #b3b3b3;
+    cursor: pointer;
+    padding: 6px;
+    margin-right: 8px;
+    position: relative;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.action-button:hover {
+    color: #fff;
+    transform: scale(1.1);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.like-button.active {
+    color: #1DB954;
+}
+
+.like-button.active svg {
+    fill: #1DB954;
+}
+
+/* Стили для модального окна */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    overflow: auto;
+}
+
+.modal-content {
+    background-color: #181818;
+    margin: 10% auto;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    animation: modalFadeIn 0.3s;
+}
+
+@keyframes modalFadeIn {
+    from {opacity: 0; transform: translateY(-20px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+
+.modal-header {
+    padding: 16px;
+    border-bottom: 1px solid #282828;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #fff;
+}
+
+.close-modal {
+    background: transparent;
+    border: none;
+    color: #b3b3b3;
+    font-size: 24px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.close-modal:hover {
+    color: #fff;
+}
+
+.modal-body {
+    padding: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.playlists-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.playlist-item {
+    background-color: #282828;
+    border-radius: 6px;
+    overflow: hidden;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
+
+.playlist-item:hover {
+    background-color: #333333;
+}
+
+.playlist-img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+}
+
+.playlist-info {
+    padding: 12px;
+}
+
+.playlist-name {
+    font-weight: bold;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.playlist-tracks {
+    font-size: 12px;
+    color: #b3b3b3;
+}
+
+.playlist-loader {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 20px;
+    color: #b3b3b3;
+}
+
+/* Стили для кнопок взаимодействия с треком */
+.track-actions {
+    display: flex;
+    margin-top: 8px;
+}
+
+.like-button, .add-playlist-button {
+    background: transparent;
+    border: none;
+    color: #b3b3b3;
+    padding: 6px;
+    margin-right: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.like-button:hover, .add-playlist-button:hover {
+    color: #fff;
+    transform: scale(1.1);
+}
+
+.like-button.active #icon-like-outline {
+    display: none;
+}
+
+.like-button.active #icon-like-filled {
+    display: block;
+}
+
+/* Стиль для модального окна выбора плейлиста */
+.playlist-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+}
+
+.playlist-modal.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.playlist-modal-content {
+    background-color: #282828;
+    border-radius: 8px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 24px;
+}
+
+.playlist-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.playlist-modal h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 24px;
+}
+
+.playlist-modal-close {
+    background: transparent;
+    border: none;
+    color: #b3b3b3;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.playlist-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.playlist-item {
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.playlist-item:hover {
+    background-color: #333;
+}
+
+.playlist-image {
+    width: 40px;
+    height: 40px;
+    margin-right: 12px;
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.playlist-name {
+    color: #fff;
+    font-weight: 500;
+}
+
+/* Стили для уведомлений */
+.spotify-notification {
+    position: fixed;
+    bottom: 80px; /* Выше плеера */
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 24px;
+    background-color: #1db954;
+    color: white;
+    border-radius: 4px;
+    font-weight: 500;
+    z-index: 1100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+
+.spotify-notification.visible {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s ease, visibility 0s linear 0s;
+}
+
+.spotify-notification.error {
+    background-color: #e74c3c;
+}
+
+/* Стили для кнопок управления треком */
+.track-actions-container {
+    display: flex;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.like-button, .add-playlist-button {
+    background: transparent;
+    border: none;
+    color: #b3b3b3;
+    cursor: pointer;
+    margin: 0 8px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.like-button:hover, .add-playlist-button:hover {
+    color: #fff;
+    transform: scale(1.1);
+}
+
+.like-button.active svg {
+    color: #1db954;
+}
+
+/* Выпадающее меню плейлистов */
+.playlist-dropdown {
+    position: absolute;
+    top: -320px;
+    right: 80px;
+    width: 300px;
+    max-height: 300px;
+    background-color: #282828;
+    border-radius: 4px;
+    box-shadow: 0 16px 24px rgba(0, 0, 0, 0.3), 0 6px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.playlist-dropdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid #333;
+}
+
+.playlist-dropdown-header span {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.close-button {
+    background: transparent;
+    border: none;
+    color: #b3b3b3;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.playlist-list {
+    overflow-y: auto;
+    max-height: 250px;
+}
+
+.playlist-item {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.playlist-item:hover {
+    background-color: #333;
+}
+
+.playlist-image {
+    width: 40px;
+    height: 40px;
+    margin-right: 12px;
+    border-radius: 2px;
+    background-color: #333;
+}
+
+.playlist-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.playlist-name {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.playlist-owner {
+    font-size: 12px;
+    color: #b3b3b3;
 }

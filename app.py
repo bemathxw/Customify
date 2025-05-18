@@ -5,12 +5,62 @@ import traceback
 from datetime import datetime, timedelta
 import sys
 from functools import wraps
+import logging
 
 from dotenv import load_dotenv
 from flask import Flask, flash, g, jsonify, render_template, request, session, redirect, url_for
 from loguru import logger
 from flask_session import Session
 
+# ПОЛНОЕ ОТКЛЮЧЕНИЕ ЛОГИРОВАНИЯ ДЛЯ NOW-PLAYING ЗАПРОСОВ
+# ===================================================
+
+# 1. Отключаем логи Flask
+from flask.logging import default_handler
+default_handler.setLevel(logging.ERROR)  # Устанавливаем высокий уровень логирования для Flask
+
+# 2. Перехватываем все стандартные логи Python
+class NowPlayingFilter(logging.Filter):
+    def filter(self, record):
+        # Если this строка содержит now-playing, отфильтровываем
+        if hasattr(record, 'msg') and isinstance(record.msg, str) and 'now-playing' in record.msg:
+            return False
+        
+        # Проверяем args если они есть
+        if hasattr(record, 'args'):
+            args_str = str(record.args)
+            if 'now-playing' in args_str:
+                return False
+                
+        return True
+
+# Применяем фильтр к корневому логгеру Python
+root_logger = logging.getLogger()
+root_logger.addFilter(NowPlayingFilter())
+
+# 3. Отключаем логи Werkzeug
+werkzeug_logger = logging.getLogger('werkzeug')
+werkzeug_logger.setLevel(logging.ERROR)  # Только критические ошибки
+werkzeug_logger.addFilter(NowPlayingFilter())
+
+# 4. Патчим WSGIRequestHandler для игнорирования now-playing
+from werkzeug.serving import WSGIRequestHandler
+
+original_log = WSGIRequestHandler.log
+
+def silent_log(self, type, message, *args):
+    if 'now-playing' not in message:
+        original_log(self, type, message, *args)
+
+WSGIRequestHandler.log = silent_log
+
+# 5. Глобальная переменная для отслеживания now-playing запросов
+class RequestState:
+    is_now_playing = False
+
+req_state = RequestState()
+
+# Остальной импорт
 from errors import AppError, SpotifyAPIError, AuthenticationError, DataProcessingError, catch_exceptions, safe_execute
 from spotify_api import get_recommendations, get_top_tracks, is_premium_user, get_headers, get_current_user
 from spotify import spotify_bp
@@ -23,6 +73,30 @@ from profiling import (
     stop_resource_monitoring, get_resource_metrics_summary,
     get_user_metrics
 )
+
+# Настраиваем Flask для отключения логирования запросов к now-playing
+class CustomFlask(Flask):
+    def log_request(self, response):
+        # Перегружаем метод log_request для фильтрации запросов к now-playing
+        if not request.path.endswith('/now-playing'):
+            super().log_request(response)
+
+# Фильтр для исключения now-playing запросов из логов
+def filter_now_playing(record):
+    """
+    Пропускаем логи для всех запросов, кроме запросов к /spotify/now-playing
+    """
+    # Проверяем, содержится ли в сообщении или пути запроса now-playing
+    if "now-playing" in record["message"].lower():
+        return False
+    
+    # Проверяем extra-данные, если они есть
+    if "extra" in record and record["extra"]:
+        path = record["extra"].get("path", "")
+        if isinstance(path, str) and "now-playing" in path:
+            return False
+            
+    return True
 
 # Enhanced logging setup
 def setup_logging():
@@ -44,20 +118,40 @@ def setup_logging():
     # Remove default logger
     logger.remove()
     
+    # Кастомный фильтр для Loguru
+    def advanced_filter(record):
+        """Расширенный фильтр для Loguru"""
+        # Проверяем глобальное состояние запроса
+        if req_state.is_now_playing:
+            return False
+            
+        # Проверяем сообщение
+        if "now-playing" in record["message"].lower():
+            return False
+            
+        # Проверяем дополнительные данные
+        extra = record.get("extra", {})
+        if extra and isinstance(extra, dict):
+            # Проверяем путь запроса если есть
+            path = extra.get("path", "")
+            if isinstance(path, str) and "now-playing" in path:
+                return False
+                
+        return True
+    
+    # Add console logger with filter
+    logger.add(
+        sys.stdout,
+        level=log_level,
+        filter=advanced_filter,
+        format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+    )
+    
     # Create logs directory structure if it doesn't exist
     os.makedirs("logs/app", exist_ok=True)
     os.makedirs("logs/access", exist_ok=True)
     os.makedirs("logs/error", exist_ok=True)
     os.makedirs("logs/performance", exist_ok=True)
-    
-    # Add console logger
-    logger.add(
-        sys.stdout,
-        level=log_level,
-        format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
-    )
-    
-    # Add file loggers for different log types
     
     # 1. Main application logs (INFO and above)
     logger.add(
@@ -66,6 +160,7 @@ def setup_logging():
         retention="30 days",  # Keep logs for 30 days
         compression="zip",  # Compress rotated logs
         level="INFO",
+        filter=filter_now_playing,
         format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{line} - {message}"
     )
     
@@ -76,6 +171,7 @@ def setup_logging():
         retention="7 days",
         compression="zip",
         level="DEBUG",
+        filter=filter_now_playing,
         format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{line} - {message}"
     )
     
@@ -85,7 +181,7 @@ def setup_logging():
         rotation="00:00",
         retention="30 days",
         compression="zip",
-        filter=lambda record: record["function"] == "log_request_info",
+        filter=lambda record: record["function"] == "log_request_info" and filter_now_playing(record),
         format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {message}"
     )
     
@@ -96,6 +192,7 @@ def setup_logging():
         retention="60 days",
         compression="zip",
         level="WARNING",
+        filter=filter_now_playing,
         format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{line} - {message}"
     )
     
@@ -105,11 +202,11 @@ def setup_logging():
         rotation="00:00",
         retention="30 days",
         compression="zip",
-        filter=lambda record: "Performance:" in record["message"],
+        filter=lambda record: "Performance:" in record["message"] and filter_now_playing(record),
         format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {message}"
     )
     
-    logger.info(f"Logging initialized with level {log_level}")
+    logger.info("Logging setup complete with level: {}", log_level)
 
 # Call setup_logging at module level
 setup_logging()
@@ -118,7 +215,7 @@ setup_logging()
 load_dotenv()
 
 # Initialize Flask app
-app = Flask(__name__, template_folder="templates")
+app = CustomFlask(__name__, template_folder="templates")
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_key_for_testing')
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = True
@@ -487,178 +584,36 @@ def home():
     
     return render_template('home.html')
 
-@app.route('/api/recommendations')
-def get_recommendations_api():
-    """
-    Asynchronously fetch music recommendations based on user's top tracks.
-    
-    This endpoint is called via AJAX to load recommendations without refreshing the page.
-    It uses the user's top tracks stored in the session to generate personalized
-    recommendations from Spotify API. Implements retry logic for rate limiting.
-    
-    Returns:
-        JSON response containing recommended tracks data or an empty list/error message
-    """
-    request_id = str(uuid.uuid4())[:8]  # Создаем короткий ID запроса для отслеживания
-    logger.info(f"[{request_id}] Async request for recommendations received")
-
-    if "spotify_token" not in session:
-        logger.error(f"[{request_id}] No Spotify token in session for async recommendations")
-        return jsonify({"error": "Not authenticated"}), 401
-
-    # Check for tracks in session
-    logger.debug(f"[{request_id}] Session keys: {list(session.keys())}")
-
-    # Get track IDs from session
-    if "top_track_ids" in session and session["top_track_ids"]:
-        track_ids = session["top_track_ids"]
-        logger.info(f"[{request_id}] Using {len(track_ids)} track IDs from session for recommendations")
-        logger.debug(f"[{request_id}] Track IDs: {track_ids}")
-    else:
-        # If no track IDs in session, fetch them again
-        logger.info(f"[{request_id}] No track IDs in session, fetching top tracks")
-        top_tracks = get_top_tracks()
-        if not top_tracks:
-            logger.error(f"[{request_id}] Failed to get top tracks for recommendations")
-            return jsonify([])
-
-        # Save track IDs, max 5 for diverse recommendations
-        track_ids = [track["id"] for track in top_tracks[:5]]
-        session["top_track_ids"] = track_ids
-        logger.info(f"[{request_id}] Saved {len(track_ids)} track IDs to session")
-        logger.debug(f"[{request_id}] New track IDs: {track_ids}")
-
+@app.route('/api/recommendations', methods=['GET'])
+def api_recommendations():
+    """Эндпоинт для получения рекомендаций"""
     try:
-        # Get recommendations with retry on 429 error
-        logger.info(f"[{request_id}] Fetching recommendations from Spotify API")
-        start_time = datetime.now()
-
-        # Add retry mechanism
-        max_retries = 3
-        retry_delay = 2
-        all_recommendations = []
-
-        # Use up to 3 tracks for diverse recommendations
-        seed_tracks = track_ids[:3] if len(track_ids) >= 3 else track_ids
-        logger.info(f"[{request_id}] Using {len(seed_tracks)} seed tracks for diverse recommendations: {seed_tracks}")
-
-        if not seed_tracks:
-            logger.error(f"[{request_id}] No seed tracks available")
-            return jsonify([])
-
-        # Get recommendations for each track separately
-        for i, seed_track in enumerate(seed_tracks):
-            logger.info(f"[{request_id}] Getting recommendations for seed track {i+1}/{len(seed_tracks)}: {seed_track}")
-
-            # Add delay between requests to avoid 429 error
-            if i > 0:
-                logger.debug(f"[{request_id}] Waiting 2 seconds before next request to avoid rate limiting")
-                time.sleep(2)
-
-            for attempt in range(max_retries):
-                try:
-                    # Get recommendations for one track
-                    logger.debug(f"[{request_id}] Calling get_recommendations() for track {seed_track}, attempt {attempt+1}/{max_retries}")
-                    track_recommendations = get_recommendations([seed_track])
-                    
-                    if track_recommendations:
-                        logger.info(f"[{request_id}] Received {len(track_recommendations)} recommendations for track {seed_track}")
-                        # Take only first 4 recommendations for each track
-                        all_recommendations.extend(track_recommendations[:4])
-                        logger.debug(f"[{request_id}] Added {min(4, len(track_recommendations))} recommendations to results")
-                        break
-                    else:
-                        logger.warning(f"[{request_id}] No recommendations returned for track {seed_track}")
-                        
-                except Exception as e:
-                    error_msg = str(e)
-                    logger.error(
-                        f"[{request_id}] Error in attempt {attempt+1}/{max_retries} for track {seed_track}: {error_msg}",
-                        exc_info=True
-                    )
-
-                    if "429" in error_msg and attempt < max_retries - 1:
-                        logger.warning(
-                            f"[{request_id}] Rate limit hit, retrying in {retry_delay} seconds (attempt {attempt+1}/{max_retries})"
-                        )
-                        time.sleep(retry_delay)
-                        retry_delay *= 2  # Exponential backoff
-                    else:
-                        # Continue with next track
-                        logger.warning(f"[{request_id}] Skipping track {seed_track} after {attempt+1} failed attempts")
-                        break
-
-        end_time = datetime.now()
-        duration = (end_time - start_time).total_seconds()
-        logger.info(
-            f"[{request_id}] All recommendations fetch completed in {duration:.2f} seconds, got {len(all_recommendations)} total recommendations"
-        )
-
-        # Check that recommendations are not empty
-        if not all_recommendations:
-            logger.error(f"[{request_id}] No recommendations found after trying all seed tracks")
-            return jsonify([])  # Return empty list instead of error
-
-        # Remove duplicates by ID
-        unique_recommendations = []
-        seen_ids = set()
-        for track in all_recommendations:
-            if track["id"] not in seen_ids:
-                seen_ids.add(track["id"])
-                unique_recommendations.append(track)
-
-        logger.info(
-            f"[{request_id}] Processing {len(unique_recommendations)} unique recommendations for response (removed {len(all_recommendations) - len(unique_recommendations)} duplicates)"
-        )
-
-        # Convert recommendations to JSON format (minimize data)
-        recommendations_data = []
-        for i, track in enumerate(unique_recommendations[:10]):  # Limit to 10 recommendations
-            # Minimize data, keep only what's necessary
-            try:
-                # Проверяем наличие обложки альбома
-                album_image = ""
-                if track.get("album") and track["album"].get("images") and track["album"]["images"]:
-                    album_image = track["album"]["images"][0]["url"]
-                    logger.debug(f"[{request_id}] Track {i+1} album image: {album_image}")
-                else:
-                    logger.warning(f"[{request_id}] No album image found for track {track['id']} - {track['name']}")
-                
-                track_data = {
-                    "id": track["id"],
-                    "name": track["name"],
-                    "artist": (
-                        track["artists"][0]["name"] if track["artists"] else "Unknown"
-                    ),
-                    "album_image": album_image,
-                    "url": track["external_urls"].get("spotify", ""),
-                }
-                recommendations_data.append(track_data)
-                logger.debug(f"[{request_id}] Processed track {i+1}: {track['name']} by {track_data['artist']}")
-            except Exception as e:
-                logger.error(f"[{request_id}] Error processing track {i+1}: {str(e)}", exc_info=True)
-                # Continue with next track
-
-        logger.info(f"[{request_id}] Returning {len(recommendations_data)} recommendations")
-        return jsonify(recommendations_data)
-
-    except AppError as e:
-        # AppErrors are already formatted properly
-        logger.error(f"AppError in recommendations API: {str(e)}", exc_info=True)
-        return jsonify({
-            "error": True,
-            "message": str(e),
-            "error_code": e.error_code,
-            "error_id": e.error_id
-        }), 500
+        app.logger.info("Запрос рекомендаций")
+        
+        # Проверяем авторизацию
+        if 'spotify_token' not in session:
+            app.logger.warning("Пользователь не авторизован для получения рекомендаций")
+            return jsonify({
+                'success': False,
+                'error': 'Требуется авторизация Spotify'
+            }), 401
+        
+        # Получаем рекомендации
+        result = get_recommendations()
+        
+        # Возвращаем результат
+        if not result.get('success'):
+            app.logger.error(f"Ошибка получения рекомендаций: {result.get('error')}")
+            return jsonify(result), 500
+        
+        return jsonify(result)
+        
     except Exception as e:
-        # Unexpected errors
-        logger.error(f"Unexpected error in recommendations API: {str(e)}", exc_info=True)
-        error_id = str(uuid.uuid4())
+        app.logger.error(f"Неожиданная ошибка при получении рекомендаций: {str(e)}")
+        app.logger.error(traceback.format_exc())
         return jsonify({
-            "error": True,
-            "message": f"An unexpected error occurred: {str(e)}",
-            "error_id": error_id
+            'success': False,
+            'error': f"Внутренняя ошибка сервера: {str(e)}"
         }), 500
 
 @app.route('/profile')
@@ -707,7 +662,7 @@ def get_recommendations_redirect():
         Redirect to /api/recommendations
     """
     logger.info("Redirecting from /get-recommendations to /api/recommendations")
-    return redirect(url_for('get_recommendations_api'))
+    return redirect(url_for('api_recommendations'))
 
 # Initialize the application with exception handling for all modules
 def init_app():
@@ -806,6 +761,7 @@ def api_metrics():
     }
     
     return jsonify(metrics)
+
 
 # Call initialization
 if __name__ == "__main__":

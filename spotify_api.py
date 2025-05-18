@@ -4,8 +4,14 @@ import requests
 from flask import session
 from loguru import logger
 import random
+import logging
+import traceback
+from flask import current_app
 
 from errors import AppError, SpotifyAPIError, AuthenticationError, DataProcessingError, catch_exceptions
+import dotenv
+
+dotenv.load_dotenv()
 
 # Spotify API endpoints
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
@@ -23,8 +29,17 @@ SPOTIFY_SCOPES = [
     "user-read-email",
     "user-top-read",
     "playlist-modify-public",
-    "playlist-modify-private"
+    "playlist-modify-private",
+    "user-read-currently-playing",
+    "user-read-playback-state",
+    "user-modify-playback-state",
+    "user-library-modify",
+    "user-library-read"
 ]
+
+# Skiley API constants
+SKILEY_API_URL = "https://api.skiley.net/track/similar"
+SKILEY_AUTH_TOKEN = os.getenv("SKILEY_AUTH_TOKEN")
 
 @catch_exceptions
 def refresh_spotify_token():
@@ -244,7 +259,224 @@ def get_top_tracks(headers=None, limit=10, time_range="short_term"):
         )
 
 @catch_exceptions
-def get_recommendations(track_ids):
+def get_recommendations():
+    """
+    Получает рекомендации на основе первого трека из топ-10 пользователя.
+    
+    Returns:
+        dict: Словарь с флагом успеха и списком рекомендованных треков
+    """
+    try:
+        logger.info("Начинаем получение рекомендаций")
+        
+        # 1. Получаем токен доступа Spotify
+        token = get_auth_token()
+        if not token:
+            logger.error("Не удалось получить токен Spotify")
+            return {"success": False, "error": "Невозможно получить токен доступа Spotify"}
+        
+        # 2. Получаем топ-треки пользователя
+        top_tracks = get_user_top_tracks(token)
+        if not top_tracks or "items" not in top_tracks or not top_tracks["items"]:
+            logger.warning("Не найдены топ-треки пользователя или некорректный ответ API")
+            return {"success": False, "error": "Не удалось получить топ-треки пользователя"}
+        
+        # 3. Берем первый трек из топа
+        first_track = top_tracks["items"][0]
+        track_id = first_track["id"]
+        logger.info(f"Используем трек для рекомендаций: {first_track['name']} (ID: {track_id})")
+        
+        # 4. Получаем рекомендации от Skiley API
+        skiley_tracks = get_skiley_recommendations(track_id)
+        if not skiley_tracks:
+            logger.warning("Не получены рекомендации от Skiley API")
+            return {"success": False, "error": "Не удалось получить рекомендации от Skiley"}
+        
+        # 5. Преобразуем в формат Spotify API
+        formatted_tracks = format_skiley_tracks(skiley_tracks)
+        logger.info(f"Сформировано {len(formatted_tracks)} рекомендаций")
+        
+        return {"success": True, "tracks": formatted_tracks}
+        
+    except Exception as e:
+        logger.error(f"Ошибка при получении рекомендаций: {str(e)}")
+        logger.error(traceback.format_exc())
+        return {"success": False, "error": str(e)}
+
+def get_auth_token():
+    """Получает текущий токен доступа Spotify из сессии или базы данных"""
+    # Эта реализация зависит от того, как вы храните токены
+    # Здесь предполагается, что у вас есть функция для получения токена
+    # Например, из сессии или базы данных
+    
+    # Пример:
+    if 'spotify_token' in session:
+        return session['spotify_token']
+    return None
+
+def get_user_top_tracks(token, limit=10, time_range="short_term"):
+    """
+    Получает топ-треки пользователя через Spotify API
+    
+    Args:
+        token (str): Токен доступа Spotify
+        limit (int): Количество треков (максимум 50)
+        time_range (str): Период времени (short_term, medium_term, long_term)
+    
+    Returns:
+        dict: Ответ API с топ-треками или None при ошибке
+    """
+    try:
+        url = f"{SPOTIFY_API_BASE_URL}/me/top/tracks"
+        headers = {"Authorization": f"Bearer {token}"}
+        params = {"limit": limit, "time_range": time_range}
+        
+        logger.info(f"Запрос топ-треков: {url} с параметрами {params}")
+        response = requests.get(url, headers=headers, params=params)
+        
+        if response.status_code != 200:
+            logger.error(f"Ошибка Spotify API: {response.status_code}, {response.text}")
+            return None
+            
+        return response.json()
+        
+    except Exception as e:
+        logger.error(f"Ошибка при получении топ-треков: {str(e)}")
+        return None
+
+def get_skiley_recommendations(track_id, limit=10):
+    """
+    Получает рекомендации от Skiley API
+    
+    Args:
+        track_id (str): ID трека Spotify
+        limit (int): Количество рекомендаций
+    
+    Returns:
+        list: Список рекомендованных треков или None при ошибке
+    """
+    try:
+        url = f"{SKILEY_API_URL}?trackId={track_id}&upToTracks={limit}"
+        
+        headers = {
+            'accept': '*/*',
+            'content-type': 'application/json',
+            'x-skiley-client-name': 'skiley-web-user',
+            'x-skiley-client-version': 'v4.2.860',
+            'x-skiley-platform-name': 'web',
+            'origin': 'https://skiley.net',
+            'referer': 'https://skiley.net/'
+        }
+        
+        cookies = {'authToken': SKILEY_AUTH_TOKEN}
+        
+        logger.info(f"Запрос к Skiley API: {url}")
+        response = requests.get(url, headers=headers, cookies=cookies)
+        
+        if response.status_code != 200:
+            logger.error(f"Ошибка Skiley API: {response.status_code}, {response.text}")
+            return None
+        
+        # Выводим ответ для отладки
+        logger.info(f"Ответ от Skiley API: {response.text[:200]}...")
+        
+        # Пробуем разные возможные структуры данных
+        data = response.json()
+        
+        # Проверяем, является ли ответ словарем с ключом 'tracks'
+        if isinstance(data, dict) and 'tracks' in data:
+            tracks = data['tracks']
+        # Проверяем, является ли ответ списком напрямую
+        elif isinstance(data, list):
+            tracks = data
+        else:
+            # Если ни одна структура не подходит, логируем и возвращаем пустой список
+            logger.error(f"Неизвестный формат данных от Skiley API: {type(data)}")
+            logger.error(f"Содержимое: {data}")
+            return []
+        
+        logger.info(f"Получено {len(tracks)} треков от Skiley API")
+        return tracks
+        
+    except Exception as e:
+        logger.error(f"Ошибка при запросе к Skiley API: {str(e)}")
+        logger.error(traceback.format_exc())
+        return None
+
+def format_skiley_tracks(skiley_tracks):
+    """
+    Преобразует треки из формата Skiley API в формат совместимый с фронтендом
+    
+    Args:
+        skiley_tracks (list): Список треков от Skiley API
+    
+    Returns:
+        list: Список треков в формате для отображения
+    """
+    formatted_tracks = []
+    
+    for track in skiley_tracks:
+        try:
+            logger.info(f"Обработка трека: {track}")
+            
+            # Проверяем, что track является словарем
+            if not isinstance(track, dict):
+                logger.warning(f"Пропускаем трек: не словарь: {type(track)}")
+                continue
+                
+            # Формирование обложки (с проверкой типа)
+            images = []
+            artworks = track.get("artworks")
+            
+            if isinstance(artworks, dict):
+                # Если artworks - словарь, обрабатываем как словарь
+                if artworks.get("large"):
+                    images.append({"url": artworks.get("large"), "height": 640, "width": 640})
+                if artworks.get("default"):
+                    images.append({"url": artworks.get("default"), "height": 300, "width": 300})
+            elif isinstance(artworks, str):
+                # Если artworks - строка, используем её как URL
+                images.append({"url": artworks, "height": 300, "width": 300})
+            
+            # Если изображений нет, добавляем заглушку
+            if not images:
+                images.append({"url": "/static/images/album-placeholder.png", "height": 300, "width": 300})
+            
+            # Формирование артистов
+            artist_name = track.get("artistName", "Неизвестный исполнитель")
+            artists = [{
+                "name": artist_name,
+                "external_urls": {"spotify": f"https://open.spotify.com/artist/unknown"}
+            }]
+            
+            # Формирование альбома
+            album = {
+                "name": track.get("albumName", "Неизвестный альбом"),
+                "images": images
+            }
+            
+            # Формирование трека
+            formatted_track = {
+                "id": track.get("id", ""),
+                "name": track.get("name", "Неизвестный трек"),
+                "uri": track.get("uri", f"spotify:track:{track.get('id', '')}"),
+                "external_urls": {"spotify": track.get("url", f"https://open.spotify.com/track/{track.get('id', '')}")},
+                "artists": artists,
+                "album": album
+            }
+            
+            formatted_tracks.append(formatted_track)
+            logger.info(f"Трек успешно обработан: {formatted_track['name']}")
+            
+        except Exception as e:
+            logger.error(f"Ошибка при обработке трека: {str(e)}")
+            logger.error(f"Исходные данные трека: {track}")
+            continue
+    
+    return formatted_tracks
+
+@catch_exceptions
+def get_recommendations_v1(track_ids):
     """
     Get recommendations from random tracks of all artists in top-10.
     
@@ -339,6 +571,7 @@ def get_recommendations(track_ids):
     print(f"Generated {len(tracks)} random recommendations from multiple artists")
     return tracks
 
+
 @catch_exceptions
 def create_playlist_with_tracks(track_uris, playlist_name="Customify Recommendations"):
     """
@@ -430,4 +663,45 @@ def is_premium_user():
     if not user_data:
         return False
         
-    return user_data.get("product") == "premium" 
+    return user_data.get("product") == "premium"
+
+@catch_exceptions
+def get_similar_tracks(track_id):
+    """
+    Получает похожие треки для конкретного трека через Skiley API.
+    
+    Args:
+        track_id (str): ID трека Spotify, для которого нужны похожие
+    
+    Returns:
+        dict: Словарь с флагом успеха и списком похожих треков
+    """
+    try:
+        logger.info(f"Начинаем получение похожих треков для ID: {track_id}")
+        
+        if not track_id:
+            logger.error("Не указан ID трека для поиска похожих")
+            return {"success": False, "error": "Не указан ID трека"}
+        
+        # 1. Получаем токен доступа Spotify для проверки
+        token = get_auth_token()
+        if not token:
+            logger.error("Не удалось получить токен Spotify")
+            return {"success": False, "error": "Невозможно получить токен доступа Spotify"}
+        
+        # 2. Получаем рекомендации от Skiley API
+        skiley_tracks = get_skiley_recommendations(track_id)
+        if not skiley_tracks:
+            logger.warning(f"Не получены рекомендации от Skiley API для трека {track_id}")
+            return {"success": False, "error": "Не удалось получить похожие треки"}
+        
+        # 3. Преобразуем в формат Spotify API
+        formatted_tracks = format_skiley_tracks(skiley_tracks)
+        logger.info(f"Сформировано {len(formatted_tracks)} похожих треков")
+        
+        return {"success": True, "tracks": formatted_tracks}
+        
+    except Exception as e:
+        logger.error(f"Ошибка при получении похожих треков: {str(e)}")
+        logger.error(traceback.format_exc())
+        return {"success": False, "error": str(e)} 

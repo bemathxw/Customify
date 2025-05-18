@@ -12,7 +12,8 @@ from errors import AppError, SpotifyAPIError, AuthenticationError, DataProcessin
 from spotify_api import (
     get_recommendations, get_top_tracks, is_premium_user, get_headers, get_current_user,
     create_playlist_with_tracks, SPOTIFY_AUTH_URL, SPOTIFY_TOKEN_URL, SPOTIFY_API_BASE_URL,
-    SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI, SPOTIFY_SCOPES
+    SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REDIRECT_URI, SPOTIFY_SCOPES,
+    get_similar_tracks
 )
 
 # Импортируем функции профилирования
@@ -23,7 +24,42 @@ from cache import clear_cache_for_function
 
 spotify_bp = Blueprint("spotify", __name__)
 
-# Routes
+@spotify_bp.route("/top-tracks")
+@profile_function
+def top_tracks():
+    """
+    Get user's top tracks from Spotify.
+    
+    Returns:
+        JSON response with success status and track data
+    """
+    logger.info("Processing top tracks request")
+    
+    try:
+        # Check if user is authenticated
+        if "spotify_token" not in session:
+            raise AuthenticationError("Not authenticated with Spotify") 
+        
+        headers = get_headers()
+        if not headers:
+            raise AuthenticationError("Invalid Spotify token")
+        
+        # Get top tracks
+        spotify_top_tracks = get_top_tracks(headers)
+        
+        return jsonify({
+            "success": True,
+            "tracks": spotify_top_tracks
+        })
+    except Exception as e:
+        logger.error(f"Error in top tracks request: {str(e)}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+    
+    
+    # Routes
 @spotify_bp.route("/login")
 @profile_function
 def login():
@@ -345,3 +381,619 @@ def track_interaction():
     except Exception as e:
         logger.error(f"Error tracking interaction: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+
+@spotify_bp.route("/now-playing")
+def now_playing():
+    """
+    Получает информацию о текущем треке и состоянии воспроизведения пользователя.
+    
+    Returns:
+        JSON с информацией о текущем воспроизведении
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация", "is_playing": False}), 200
+        
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен", "is_playing": False}), 200
+        
+        # Получаем полную информацию о текущем воспроизведении
+        response = requests.get(
+            f"{SPOTIFY_API_BASE_URL}/me/player", 
+            headers=headers,
+            params={"additional_types": "track,episode"}
+        )
+        
+        # Если нет активного устройства (204)
+        if response.status_code == 204:
+            return jsonify({"success": False, "is_playing": False}), 200
+        
+        # Если успешный ответ
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Если нет активного трека
+            if not data or not data.get("item"):
+                return jsonify({"success": False, "is_playing": False}), 200
+            
+            return jsonify({
+                "success": True,
+                "is_playing": data.get("is_playing", False),
+                "progress_ms": data.get("progress_ms", 0),
+                "item": data.get("item"),
+                "device": data.get("device"),
+                "shuffle_state": data.get("shuffle_state", False),
+                "repeat_state": data.get("repeat_state", "off")
+            }), 200
+            
+        # В других случаях - ошибка
+        return jsonify({
+            "success": False, 
+            "error": f"Ошибка API Spotify: {response.status_code}", 
+            "is_playing": False
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "is_playing": False}), 200
+
+@spotify_bp.route("/toggle-playback", methods=["POST"])
+def toggle_playback():
+    """
+    Переключает воспроизведение/паузу текущего трека в Spotify.
+    
+    Returns:
+        JSON с результатом операции
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        # Сначала проверяем текущее состояние
+        response = requests.get(f"{SPOTIFY_API_BASE_URL}/me/player", headers=headers)
+        
+        if response.status_code == 204:
+            return jsonify({"success": False, "error": "Нет активного устройства"}), 200
+        
+        if response.status_code != 200:
+            return jsonify({
+                "success": False,
+                "error": f"Ошибка API Spotify: {response.status_code}"
+            }), 200
+        
+        # Определяем, что делать: пауза или воспроизведение
+        player_state = response.json()
+        is_playing = player_state.get("is_playing", False)
+        
+        if is_playing:
+            # Если играет - ставим на паузу
+            response = requests.put(f"{SPOTIFY_API_BASE_URL}/me/player/pause", headers=headers)
+        else:
+            # Если на паузе - воспроизводим
+            response = requests.put(f"{SPOTIFY_API_BASE_URL}/me/player/play", headers=headers)
+        
+        if response.status_code in [204, 202]:
+            return jsonify({
+                "success": True,
+                "is_playing": not is_playing
+            })
+        
+        return jsonify({
+            "success": False,
+            "error": f"Ошибка API Spotify: {response.status_code}"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/next-track", methods=["POST"])
+def next_track():
+    """
+    Переключает на следующий трек.
+    
+    Returns:
+        JSON с результатом операции
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        response = requests.post(f"{SPOTIFY_API_BASE_URL}/me/player/next", headers=headers)
+        
+        if response.status_code in [204, 202]:
+            return jsonify({"success": True})
+        
+        return jsonify({
+            "success": False,
+            "error": f"Ошибка API Spotify: {response.status_code}"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/previous-track", methods=["POST"])
+def previous_track():
+    """
+    Переключает на предыдущий трек.
+    
+    Returns:
+        JSON с результатом операции
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        response = requests.post(f"{SPOTIFY_API_BASE_URL}/me/player/previous", headers=headers)
+        
+        if response.status_code in [204, 202]:
+            return jsonify({"success": True})
+        
+        return jsonify({
+            "success": False,
+            "error": f"Ошибка API Spotify: {response.status_code}"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/seek", methods=["POST"])
+def seek_position():
+    """
+    Перематывает трек на указанную позицию.
+    
+    Returns:
+        JSON с результатом операции
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        data = request.json
+        position_ms = data.get("position_ms", 0)
+        
+        response = requests.put(
+            f"{SPOTIFY_API_BASE_URL}/me/player/seek",
+            headers=headers,
+            params={"position_ms": position_ms}
+        )
+        
+        if response.status_code in [204, 202]:
+            return jsonify({"success": True})
+        
+        return jsonify({
+            "success": False,
+            "error": f"Ошибка API Spotify: {response.status_code}"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/volume", methods=["POST"])
+def set_volume():
+    """
+    Устанавливает громкость воспроизведения.
+    
+    Returns:
+        JSON с результатом операции
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        data = request.json
+        volume_percent = data.get("volume_percent", 50)
+        
+        response = requests.put(
+            f"{SPOTIFY_API_BASE_URL}/me/player/volume",
+            headers=headers,
+            params={"volume_percent": volume_percent}
+        )
+        
+        if response.status_code in [204, 202]:
+            return jsonify({"success": True})
+        
+        return jsonify({
+            "success": False,
+            "error": f"Ошибка API Spotify: {response.status_code}"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/toggle-shuffle", methods=["POST"])
+def toggle_shuffle():
+    """
+    Переключает режим перемешивания.
+    
+    Returns:
+        JSON с результатом операции
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        # Получаем текущее состояние
+        response = requests.get(f"{SPOTIFY_API_BASE_URL}/me/player", headers=headers)
+        
+        if response.status_code != 200:
+            return jsonify({
+                "success": False,
+                "error": f"Ошибка API Spotify: {response.status_code}"
+            }), 200
+        
+        data = response.json()
+        current_state = data.get("shuffle_state", False)
+        new_state = not current_state
+        
+        response = requests.put(
+            f"{SPOTIFY_API_BASE_URL}/me/player/shuffle?state={str(new_state).lower()}",
+            headers=headers
+        )
+        
+        if response.status_code in [204, 202]:
+            return jsonify({
+                "success": True,
+                "shuffle_state": new_state
+            })
+        
+        return jsonify({
+            "success": False,
+            "error": f"Ошибка API Spotify: {response.status_code}"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/toggle-repeat", methods=["POST"])
+def toggle_repeat():
+    """
+    Циклически переключает режим повтора (off -> context -> track -> off).
+    
+    Returns:
+        JSON с результатом операции
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        # Получаем текущее состояние
+        response = requests.get(f"{SPOTIFY_API_BASE_URL}/me/player", headers=headers)
+        
+        if response.status_code != 200:
+            return jsonify({
+                "success": False,
+                "error": f"Ошибка API Spotify: {response.status_code}"
+            }), 200
+        
+        data = response.json()
+        current_state = data.get("repeat_state", "off")
+        
+        # Определяем следующее состояние в цикле
+        states = ["off", "context", "track"]
+        current_index = states.index(current_state) if current_state in states else 0
+        next_index = (current_index + 1) % len(states)
+        new_state = states[next_index]
+        
+        response = requests.put(
+            f"{SPOTIFY_API_BASE_URL}/me/player/repeat?state={new_state}",
+            headers=headers
+        )
+        
+        if response.status_code in [204, 202]:
+            return jsonify({
+                "success": True,
+                "repeat_state": new_state
+            })
+        
+        return jsonify({
+            "success": False,
+            "error": f"Ошибка API Spotify: {response.status_code}"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/check-saved-track")
+def check_saved_track():
+    """
+    Проверяет, сохранен ли трек в библиотеке пользователя.
+    
+    Returns:
+        JSON с результатом и статусом трека
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        track_id = request.args.get('track_id')
+        if not track_id:
+            return jsonify({"success": False, "error": "Не указан ID трека"}), 200
+        
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        response = requests.get(
+            f"{SPOTIFY_API_BASE_URL}/me/tracks/contains",
+            headers=headers,
+            params={"ids": track_id}
+        )
+        
+        if response.status_code == 200:
+            is_saved = response.json()[0] if response.json() else False
+            return jsonify({"success": True, "is_saved": is_saved})
+        
+        return jsonify({
+            "success": False,
+            "error": f"Ошибка API Spotify: {response.status_code}"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/save-track", methods=["POST"])
+def save_track():
+    """
+    Добавляет трек в библиотеку пользователя.
+    
+    Returns:
+        JSON с результатом операции
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        data = request.json
+        track_id = data.get('track_id')
+        if not track_id:
+            return jsonify({"success": False, "error": "Не указан ID трека"}), 200
+        
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        response = requests.put(
+            f"{SPOTIFY_API_BASE_URL}/me/tracks",
+            headers=headers,
+            params={"ids": track_id}
+        )
+        
+        if response.status_code in [200, 201]:
+            return jsonify({"success": True})
+        
+        return jsonify({
+            "success": False,
+            "error": f"Ошибка API Spotify: {response.status_code}"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/remove-saved-track", methods=["DELETE"])
+def remove_saved_track():
+    """
+    Удаляет трек из библиотеки пользователя.
+    
+    Returns:
+        JSON с результатом операции
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        data = request.json
+        track_id = data.get('track_id')
+        if not track_id:
+            return jsonify({"success": False, "error": "Не указан ID трека"}), 200
+        
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        response = requests.delete(
+            f"{SPOTIFY_API_BASE_URL}/me/tracks",
+            headers=headers,
+            params={"ids": track_id}
+        )
+        
+        if response.status_code in [200, 204]:
+            return jsonify({"success": True})
+        
+        return jsonify({
+            "success": False,
+            "error": f"Ошибка API Spotify: {response.status_code}"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/user-playlists")
+def user_playlists():
+    """
+    Получает список плейлистов пользователя.
+    
+    Returns:
+        JSON со списком плейлистов
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        response = requests.get(
+            f"{SPOTIFY_API_BASE_URL}/me/playlists",
+            headers=headers,
+            params={"limit": 50}
+        )
+        
+        if response.status_code == 200:
+            playlists_data = response.json()
+            return jsonify({
+                "success": True, 
+                "playlists": playlists_data.get("items", [])
+            })
+        
+        return jsonify({
+            "success": False,
+            "error": f"Ошибка API Spotify: {response.status_code}"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/add-to-playlist", methods=["POST"])
+def add_to_playlist():
+    """
+    Добавляет трек в плейлист.
+    
+    Returns:
+        JSON с результатом операции
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        data = request.json
+        playlist_id = data.get('playlist_id')
+        track_uri = data.get('track_uri')
+        
+        if not playlist_id or not track_uri:
+            return jsonify({"success": False, "error": "Не указан ID плейлиста или URI трека"}), 200
+        
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        response = requests.post(
+            f"{SPOTIFY_API_BASE_URL}/playlists/{playlist_id}/tracks",
+            headers=headers,
+            json={"uris": [track_uri]}
+        )
+        
+        if response.status_code in [201, 200]:
+            return jsonify({"success": True})
+        
+        return jsonify({
+            "success": False,
+            "error": f"Ошибка API Spotify: {response.status_code}"
+        }), 200
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/play-track", methods=["POST"])
+def play_track():
+    """
+    Воспроизводит указанный трек в Spotify.
+    
+    Returns:
+        JSON с результатом операции
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        data = request.json
+        uri = data.get('uri')
+        
+        if not uri:
+            return jsonify({"success": False, "error": "Не указан URI трека"}), 200
+        
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        # Формируем запрос с URI трека
+        payload = {
+            "uris": [uri] if ":" in uri else None,
+            "context_uri": uri if ":" not in uri else None
+        }
+        
+        # Удаляем None значения
+        payload = {k: v for k, v in payload.items() if v is not None}
+        
+        # Воспроизводим трек
+        response = requests.put(
+            f"{SPOTIFY_API_BASE_URL}/me/player/play", 
+            headers=headers,
+            json=payload
+        )
+        
+        if response.status_code in [204, 202]:
+            return jsonify({"success": True})
+        
+        error_info = ""
+        try:
+            error_data = response.json()
+            error_info = f": {error_data.get('error', {}).get('message', '')}"
+        except:
+            pass
+            
+        return jsonify({
+            "success": False,
+            "error": f"Ошибка API Spotify: {response.status_code}{error_info}"
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Ошибка при воспроизведении трека: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/get-similar-tracks", methods=["GET"])
+def get_similar_tracks_endpoint():
+    """
+    Эндпоинт для получения похожих треков по ID.
+    
+    Query параметры:
+        track_id (str): ID трека Spotify
+    
+    Returns:
+        JSON с похожими треками или сообщением об ошибке
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+            
+        track_id = request.args.get('track_id')
+        if not track_id:
+            return jsonify({"success": False, "error": "Не указан ID трека"}), 200
+            
+        # Получаем похожие треки
+        result = get_similar_tracks(track_id)
+        
+        # Возвращаем результат
+        return jsonify(result), 200
+        
+    except Exception as e:
+        logger.error(f"Ошибка при получении похожих треков: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 200
