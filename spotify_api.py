@@ -704,4 +704,48 @@ def get_similar_tracks(track_id):
     except Exception as e:
         logger.error(f"Ошибка при получении похожих треков: {str(e)}")
         logger.error(traceback.format_exc())
-        return {"success": False, "error": str(e)} 
+        return {"success": False, "error": str(e)}
+
+@catch_exceptions
+def get_spotify_user_profile():
+    """
+    Получает подробную информацию о профиле пользователя Spotify.
+    
+    Returns:
+        dict: Словарь с данными профиля пользователя или пустой словарь в случае ошибки
+    """
+    try:
+        logger.info("Получение профиля пользователя Spotify")
+        
+        # Получаем заголовки с токеном авторизации
+        headers = get_headers()
+        if not headers:
+            logger.error("Не удалось получить токен авторизации")
+            return {}
+        
+        # Получаем данные пользователя с помощью уже существующей функции
+        user_data = get_current_user(headers)
+        
+        if not user_data:
+            logger.error("Не удалось получить данные пользователя")
+            return {}
+        
+        # Проверка наличия аватара
+        if not user_data.get('images') or len(user_data['images']) == 0:
+            logger.info("У пользователя нет аватара, используем изображение по умолчанию")
+            # Профиль без аватара, но все остальные данные есть
+        else:
+            logger.info(f"Аватар пользователя найден: {user_data['images'][0].get('url', 'URL не найден')}")
+        
+        # Проверка наличия имени пользователя
+        if not user_data.get('display_name'):
+            logger.warning("Имя пользователя не найдено, используем ID пользователя")
+            user_data['display_name'] = user_data.get('id', 'Пользователь Spotify')
+        
+        logger.info(f"Профиль пользователя успешно получен: {user_data['display_name']}")
+        return user_data
+        
+    except Exception as e:
+        logger.error(f"Ошибка при получении профиля пользователя: {str(e)}")
+        logger.error(traceback.format_exc())
+        return {} 

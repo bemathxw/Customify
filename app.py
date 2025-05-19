@@ -62,7 +62,7 @@ req_state = RequestState()
 
 # Остальной импорт
 from errors import AppError, SpotifyAPIError, AuthenticationError, DataProcessingError, catch_exceptions, safe_execute
-from spotify_api import get_recommendations, get_top_tracks, is_premium_user, get_headers, get_current_user
+from spotify_api import get_recommendations, get_top_tracks, is_premium_user, get_headers, get_current_user, get_spotify_user_profile
 from spotify import spotify_bp
 import jinja2
 
@@ -634,6 +634,7 @@ def profile():
             logger.warning("Failed to get valid headers, showing login button")
             return render_template('profile.html', show_login_button=True)
         
+        user_data = get_spotify_user_profile()
         # Получаем топ треки
         top_tracks = get_top_tracks(headers)
         
@@ -645,6 +646,8 @@ def profile():
             'profile.html', 
             show_login_button=False, 
             top_tracks=top_tracks,
+            user_name=user_data.get('display_name', 'Пользователь Spotify'),
+            user_avatar=user_data.get('images', [{}])[0].get('url') if user_data.get('images') else None,
             premium_user=premium_user
         )
     except Exception as e:

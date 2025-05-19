@@ -24,13 +24,95 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        /* Стили для профиля пользователя */
+        .user-profile-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .user-avatar-container {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            background-color: #282828;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .user-avatar {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .default-avatar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            background-color: #333;
+        }
+        
+        .user-name {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+            color: #fff;
+        }
+        
+        .profile-description {
+            color: #b3b3b3;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .recommendations-header-container {
+            display: inline-flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        #refresh-recommendations {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            transition: all 0.2s ease;
+            margin-left: 20px;
+            margin-bottom: 7px;
+        }
+        
+        #refresh-recommendations:hover {
+            background-color: #1db954;
+            color: white;
+            border-color: #1db954;
+            transform: scale(1.05);
+        }
+        
+        #refresh-recommendations svg {
+            transition: transform 0.3s ease;
+        }
+        
+        #refresh-recommendations:hover svg {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 <body>
 
 <header>
     <div class="logo">
-        <a href="{{ url_for('home') }}">LOGO</a>
+        <a href="{{ url_for('home') }}">Customify</a>
     </div>
     {% if show_login_button %}
     <!-- Не должно быть ссылок на logout здесь -->
@@ -42,8 +124,21 @@
 </header>
 
 <div class="profile-page">
-    <h2>Profile Pag</h2>
-    <p>This is your profile page.</p>
+    <div class="user-profile-header">
+        <div class="user-avatar-container">
+            {% if user_avatar %}
+                <img src="{{ user_avatar }}" alt="{{ user_name }}" class="user-avatar">
+            {% else %}
+                <div class="default-avatar">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" fill="#1DB954"/>
+                        <path d="M12 14C7.58172 14 4 17.5817 4 22H20C20 17.5817 16.4183 14 12 14Z" fill="#1DB954"/>
+                    </svg>
+                </div>
+            {% endif %}
+        </div>
+        <h2 class="user-name">{{ user_name }}</h2>
+    </div>
 
     {% if show_login_button %}
         <!-- Кнопка для входа в Spotify -->
@@ -67,8 +162,17 @@
             {% endfor %}
         </div>
 
-        <!-- Секция рекомендаций с загрузчиком -->
-        <h2>Recommended Tracks</h2>
+        <!-- Секция рекомендаций с заголовком и кнопкой обновления -->
+        <div class="recommendations-header-container">
+            <h2>Recommended Tracks</h2>
+            <button id="refresh-recommendations" class="btn btn-outline-success" title="Обновить рекомендации" style="width: 110px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-repeat" viewBox="0 0 16 16">
+                    <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
+                    <path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
+                </svg>
+                <span>Refresh</span>
+            </button>
+        </div>
         <div id="recommendations-container">
           <!-- Сюда загрузятся рекомендации -->
         </div>
@@ -1648,102 +1752,56 @@ function showNotification(message, isError = false) {
         
         // Показываем состояние загрузки
         const container = document.getElementById('recommendations-container');
-        container.innerHTML = '<div class="spinner" style="margin-top: 80px; margin-bottom: 80px;"></div><p></p>';
-        const style = document.createElement('style');
-        style.textContent = `
-            .spinner {
-                margin-top: 80px;
-                border: 4px solid rgba(0, 0, 0, 0.1);
-                width: 36px;
-                height: 36px;
-                border-radius: 50%;
-                border-left-color: #1DB954;
-                animation: spin 1s linear infinite;
-                margin: 0 auto 10px;
-            }
-            
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            
-            .track-search-item {
-                display: flex;
-                align-items: center;
-                padding: 10px;
-                border-radius: 4px;
-                margin-bottom: 10px;
-                background-color: #282828;
-                cursor: pointer;
-                transition: background-color 0.2s;
-            }
-            
-            .track-search-item:hover {
-                background-color: #333;
-            }
-            
-            .track-search-image {
-                width: 60px;
-                height: 60px;
-                object-fit: cover;
-                margin-right: 15px;
-                border-radius: 4px;
-            }
-            
-            .track-search-info {
-                flex-grow: 1;
-            }
-            
-            .track-search-name {
-                font-weight: bold;
-                margin-bottom: 5px;
-            }
-            
-            .track-search-artist {
-                color: #b3b3b3;
-                font-size: 0.9em;
-            }
-        `;
-        document.head.appendChild(style);
-        // Делаем запрос к нашему Flask-эндпоинту
-        fetch('/api/recommendations')
-            .then(response => {
-                console.log('Статус ответа:', response.status);
-                
-                // Всегда читаем JSON из ответа, даже при ошибке
-                return response.json().then(data => {
-                    // Добавляем статус в объект данных
-                    return { ...data, status: response.status };
+        
+        // Отображаем индикатор загрузки
+        container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+        
+        // Возвращаем Promise для корректной работы с then/catch
+        return new Promise((resolve, reject) => {
+            // Делаем запрос к нашему Flask-эндпоинту
+            fetch('/api/recommendations')
+                .then(response => {
+                    console.log('Статус ответа:', response.status);
+                    
+                    // Всегда читаем JSON из ответа, даже при ошибке
+                    return response.json().then(data => {
+                        // Добавляем статус в объект данных
+                        return { ...data, status: response.status };
+                    });
+                })
+                .then(data => {
+                    console.log('Получены данные:', data);
+                    
+                    // Проверяем статус ответа
+                    if (data.status >= 400) {
+                        throw new Error(data.error || `Ошибка сервера: ${data.status}`);
+                    }
+                    
+                    // Проверяем успешность выполнения
+                    if (!data.success) {
+                        throw new Error(data.error || 'Неизвестная ошибка');
+                    }
+                    
+                    // Проверяем наличие треков
+                    if (!data.tracks || data.tracks.length === 0) {
+                        container.innerHTML = 
+                            '<div class="notice-message">Для вас пока нет рекомендаций. Слушайте больше музыки!</div>';
+                        resolve(); // Завершаем Promise успешно
+                        return;
+                    }
+                    
+                    saveTracksToSession(data.tracks);
+                    // Отображаем рекомендации
+                    displayRecommendations(data.tracks);
+                    resolve(); // Завершаем Promise успешно
+                })
+                .catch(error => {
+                    console.error('Ошибка запроса:', error);
+                    document.getElementById('recommendations-container').innerHTML = 
+                        `<div class="error-message">Не удалось загрузить рекомендации: ${error.message}</div>`;
+                    reject(error); // Завершаем Promise с ошибкой
                 });
-            })
-            .then(data => {
-                console.log('Получены данные:', data);
-                
-                // Проверяем статус ответа
-                if (data.status >= 400) {
-                    throw new Error(data.error || `Ошибка сервера: ${data.status}`);
-                }
-                
-                // Проверяем успешность выполнения
-                if (!data.success) {
-                    throw new Error(data.error || 'Неизвестная ошибка');
-                }
-                
-                // Проверяем наличие треков
-                if (!data.tracks || data.tracks.length === 0) {
-                    container.innerHTML = 
-                        '<div class="notice-message">Для вас пока нет рекомендаций. Слушайте больше музыки!</div>';
-                    return;
-                }
-                saveTracksToSession(data.tracks);
-                // Отображаем рекомендации
-                displayRecommendations(data.tracks);
-            })
-            .catch(error => {
-                console.error('Ошибка запроса:', error);
-                document.getElementById('recommendations-container').innerHTML = 
-                    `<div class="error-message">Не удалось загрузить рекомендации: ${error.message}</div>`;
-            });
+        });
     }
 
         // Функция для сохранения ID треков в сессию
@@ -1910,6 +1968,35 @@ function showNotification(message, isError = false) {
         // Инициализируем обработчики для модального окна
         initModalHandlers();
     }
+
+    // Обработчик для кнопки обновления рекомендаций
+    document.addEventListener('DOMContentLoaded', function() {
+        const refreshButton = document.getElementById('refresh-recommendations');
+        if (refreshButton) {
+            refreshButton.addEventListener('click', function() {
+                this.style.width = '110px';
+                // Отключаем кнопку на время загрузки
+                this.disabled = true;
+                this.style.width = '110px';
+
+                // Вызываем функцию загрузки рекомендаций
+                fetchRecommendations()
+                    .then(() => {
+                        // Возвращаем исходное состояние кнопки
+                        setTimeout(() => {
+                            this.disabled = false;
+                        }, 500);
+                    })
+                    .catch(error => {
+                        console.error('Ошибка при обновлении рекомендаций:', error);
+                        buttonText.textContent = 'Error';
+                        setTimeout(() => {
+                            this.disabled = false;
+                        }, 2000);
+                    });
+            });
+        }
+    });
 
     // Проверка, находится ли трек в избранном
     function checkIfTrackLiked(trackId) {
