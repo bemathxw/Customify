@@ -42,7 +42,7 @@
 </header>
 
 <div class="profile-page">
-    <h2>Profile Page</h2>
+    <h2>Profile Pag</h2>
     <p>This is your profile page.</p>
 
     {% if show_login_button %}
@@ -227,7 +227,7 @@
       <button id="modal-playlist-btn" title="Добавить в плейлист"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
         <path d="M14 7H9V2H7v5H2v2h5v5h2V9h5z"></path>
       </svg></button>
-      <button id="modal-similar-btn" title="Найти похожие треки">Similar</button>
+      <button id="modal-similar-btn" title="Find similar tracks">Similar</button>
     </div>
   </div>
 </div>
@@ -635,7 +635,7 @@
           displayRecommendations(data.tracks);
           saveTracksToSession(data.tracks);
           // Показываем кнопки действий
-          document.getElementById('action-buttons').style.display = 'flex';
+          document.getElementById('action-buttons').style.display = 'block';
         } else {
           recommendationsContainer.innerHTML = `
             <div class="alert alert-warning">
@@ -1648,8 +1648,63 @@ function showNotification(message, isError = false) {
         
         // Показываем состояние загрузки
         const container = document.getElementById('recommendations-container');
-        container.innerHTML = '<div class="loading-indicator">Загрузка рекомендаций...</div>';
-        
+        container.innerHTML = '<div class="spinner" style="margin-top: 80px; margin-bottom: 80px;"></div><p></p>';
+        const style = document.createElement('style');
+        style.textContent = `
+            .spinner {
+                margin-top: 80px;
+                border: 4px solid rgba(0, 0, 0, 0.1);
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                border-left-color: #1DB954;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 10px;
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+            .track-search-item {
+                display: flex;
+                align-items: center;
+                padding: 10px;
+                border-radius: 4px;
+                margin-bottom: 10px;
+                background-color: #282828;
+                cursor: pointer;
+                transition: background-color 0.2s;
+            }
+            
+            .track-search-item:hover {
+                background-color: #333;
+            }
+            
+            .track-search-image {
+                width: 60px;
+                height: 60px;
+                object-fit: cover;
+                margin-right: 15px;
+                border-radius: 4px;
+            }
+            
+            .track-search-info {
+                flex-grow: 1;
+            }
+            
+            .track-search-name {
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+            
+            .track-search-artist {
+                color: #b3b3b3;
+                font-size: 0.9em;
+            }
+        `;
+        document.head.appendChild(style);
         // Делаем запрос к нашему Flask-эндпоинту
         fetch('/api/recommendations')
             .then(response => {
@@ -1713,56 +1768,80 @@ function showNotification(message, isError = false) {
         });
     }
     
-    // Функция отображения рекомендаций
+    // Функция отображения рекомендаций с гиперссылками
     function displayRecommendations(tracks) {
-        console.log('Отображение рекомендаций. Количество треков:', tracks.length);
+        console.log('Отображение рекомендаций:', tracks.length);
         
-        const container = document.getElementById('recommendations-container');
+        // Получаем контейнер для рекомендаций
+        const recommendationsContainer = document.getElementById('recommendations-container');
         
-        // Создаем заголовок и список треков, используя тот же класс track-list как для топ-10
-        container.innerHTML = `
-            <div class="track-list" id="recommendations-list"></div>
-        `;
+        // Очищаем контейнер
+        recommendationsContainer.innerHTML = '';
         
-        const trackList = document.getElementById('recommendations-list');
+        // Создаем заголовок
+        const header = document.createElement('h2');
+        header.className = 'recommendations-header';
+        recommendationsContainer.appendChild(header);
         
-        // Создаем карточку для каждого трека в идентичном стиле с топ-треками
+        // Создаем список треков
+        const trackList = document.createElement('div');
+        trackList.className = 'track-list';
+        trackList.id = 'recommendations-list';
+        
+        // Добавляем треки
         tracks.forEach(track => {
-            // Получаем URL обложки
-            const imageUrl = track.album?.images?.[0]?.url || 
-                            track.artworks?.large || 
-                            track.artworks?.default || 
-                            '/static/images/album-placeholder.png';
+            // Создаем элемент трека
+            const trackItem = document.createElement('div');
+            trackItem.className = 'track-item';
+            trackItem.setAttribute('data-uri', track.uri);
+            trackItem.setAttribute('data-id', track.id);
             
-            // Формируем имя исполнителя
-            let artistName = '';
-            if (track.artists && Array.isArray(track.artists)) {
-                artistName = track.artists.map(artist => artist.name).join(', ');
-            } else if (track.artistName) {
-                artistName = track.artistName;
-            } else {
-                artistName = 'Неизвестный исполнитель';
+            // Создаем ссылку для обложки
+            const coverLink = document.createElement('a');
+            coverLink.href = track.uri;
+            coverLink.target = '_blank';
+            
+            // Добавляем обложку
+            const coverImg = document.createElement('img');
+            coverImg.src = track.album.images[0].url;
+            coverImg.alt = track.name;
+            coverImg.className = 'track-cover';
+            coverLink.appendChild(coverImg);
+            
+            // Создаем блок информации о треке
+            const trackInfo = document.createElement('div');
+            trackInfo.className = 'track-info';
+            
+            // Создаем ссылку на название трека
+            const trackNameLink = document.createElement('a');
+            trackNameLink.href = track.uri;
+            trackNameLink.target = '_blank';
+            trackNameLink.className = 'track-name';
+            trackNameLink.textContent = track.name;
+            
+            // Создаем ссылку на исполнителя
+            const artistLink = document.createElement('a');
+            if (track.artists && track.artists.length > 0) {
+                artistLink.href = 'spotify:artist:' + track.artists.map(artist => artist.name).join(', ');
+                artistLink.target = '_blank';
+                artistLink.className = 'artist-name';
+                artistLink.textContent = track.artists.map(artist => artist.name).join(', ');
             }
             
-            // Создаем элемент трека в точно таком же стиле как топ-треки
-            const trackElement = document.createElement('div');
-            trackElement.className = 'track-item';  // Используем класс track-item
-            trackElement.dataset.uri = track.uri || `spotify:track:${track.id}`;
-            trackElement.dataset.id = track.id;
+            // Собираем элементы вместе
+            trackInfo.appendChild(trackNameLink);
+            trackInfo.appendChild(artistLink);
             
-            trackElement.innerHTML = `
-                <div class="track-cover-container">
-                    <img src="${imageUrl}" alt="${track.name}" class="track-cover">
-                </div>
-                <div class="track-info">
-                    <div class="track-name">${track.name}</div>
-                    <div class="artist-name">${artistName}</div>
-                </div>
-            `;
-            
-            // Добавляем трек в список треков
-            trackList.appendChild(trackElement);
+            trackItem.appendChild(coverLink);
+            trackItem.appendChild(trackInfo);
+            trackList.appendChild(trackItem);
         });
+        
+        // Добавляем список треков в контейнер
+        recommendationsContainer.appendChild(trackList);
+        
+        // Показываем кнопки действий
+        document.getElementById('action-buttons').style.display = 'block';
     }
 
     // Вспомогательная функция для получения ссылок на артистов
@@ -2015,6 +2094,394 @@ function showNotification(message, isError = false) {
     // Вызываем функцию при загрузке страницы
     document.addEventListener('DOMContentLoaded', getSessionTracks);
 
+    // Добавляем кнопку "Найти похожие треки" под панелью рекомендаций
+    document.addEventListener('DOMContentLoaded', function() {
+        // Находим контейнер с рекомендациями
+        const recommendationsContainer = document.getElementById('recommendations-container');
+        if (recommendationsContainer) {
+            // Создаем контейнер для кнопки
+            const findSimilarBtnContainer = document.createElement('div');
+            findSimilarBtnContainer.className = 'find-similar-container';
+            findSimilarBtnContainer.style.cssText = 'margin-top: 20px; text-align: center;';
+            
+            // Создаем кнопку
+            const findSimilarBtn = document.createElement('button');
+            findSimilarBtn.innerText = 'Find similar tracks';
+            findSimilarBtn.className = 'btn btn-primary mt-4';
+            findSimilarBtn.style.cssText = 'padding: 10px 20px; border-radius: 20px; font-weight: 600;';
+            findSimilarBtn.onclick = openTrackSearchModal;
+            
+            // Добавляем кнопку в контейнер
+            findSimilarBtnContainer.appendChild(findSimilarBtn);
+            
+            // Добавляем контейнер после блока рекомендаций
+            recommendationsContainer.parentNode.insertBefore(findSimilarBtnContainer, recommendationsContainer.nextSibling);
+            
+            // Добавляем модальное окно для поиска треков в body
+            createTrackSearchModal();
+        }
+    });
+
+    // Создание модального окна для поиска треков
+    function createTrackSearchModal() {
+        // Проверяем, существует ли уже модальное окно
+        if (document.getElementById('track-search-modal')) {
+            return;
+        }
+        
+        // Создаем модальное окно
+        const modal = document.createElement('div');
+        modal.id = 'track-search-modal';
+        modal.className = 'modal';
+        modal.style.cssText = `
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
+        `;
+        
+        // Создаем содержимое модального окна
+        const modalContent = document.createElement('div');
+        modalContent.className = 'modal-content';
+        modalContent.style.cssText = `
+            background-color: #181818;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            color: white;
+            position: relative;
+        `;
+        
+        // Создаем заголовок модального окна
+        const modalHeader = document.createElement('div');
+        modalHeader.className = 'modal-header';
+        modalHeader.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        `;
+        
+        const modalTitle = document.createElement('h3');
+        modalTitle.textContent = 'Поиск треков';
+        modalTitle.style.cssText = 'margin: 0;';
+        
+        const closeButton = document.createElement('span');
+        closeButton.className = 'close-button';
+        closeButton.innerHTML = '&times;';
+        closeButton.style.cssText = `
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        `;
+        closeButton.onclick = function() {
+            modal.style.display = 'none';
+        };
+        
+        modalHeader.appendChild(modalTitle);
+        modalHeader.appendChild(closeButton);
+        
+        // Создаем форму поиска
+        const searchForm = document.createElement('div');
+        searchForm.className = 'search-form';
+        searchForm.style.cssText = `
+            display: flex;
+            margin-bottom: 20px;
+        `;
+        
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.id = 'track-search-input';
+        searchInput.placeholder = 'Введите название трека...';
+        searchInput.style.cssText = `
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 4px 0 0 4px;
+            border: none;
+            background-color: #333;
+            color: white;
+        `;
+        
+        const searchButton = document.createElement('button');
+        searchButton.id = 'track-search-button';
+        searchButton.textContent = 'Искать';
+        searchButton.style.cssText = `
+            padding: 10px 15px;
+            border: none;
+            background-color: #1DB954;
+            color: white;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+        `;
+        searchButton.onclick = searchTracks;
+        
+        searchForm.appendChild(searchInput);
+        searchForm.appendChild(searchButton);
+        
+        // Создаем контейнер для результатов поиска
+        const resultsContainer = document.createElement('div');
+        resultsContainer.id = 'track-search-results';
+        resultsContainer.style.cssText = `
+            max-height: 400px;
+            overflow-y: auto;
+        `;
+        
+        // Создаем индикатор загрузки
+        const loadingIndicator = document.createElement('div');
+        loadingIndicator.id = 'track-search-loading';
+        loadingIndicator.style.cssText = `
+            display: none;
+            text-align: center;
+            padding: 20px;
+        `;
+        loadingIndicator.innerHTML = '<div class="spinner"></div><p>Загрузка...</p>';
+        
+        // Добавляем все элементы в модальное окно
+        modalContent.appendChild(modalHeader);
+        modalContent.appendChild(searchForm);
+        modalContent.appendChild(loadingIndicator);
+        modalContent.appendChild(resultsContainer);
+        modal.appendChild(modalContent);
+        
+        // Добавляем модальное окно в body
+        document.body.appendChild(modal);
+        
+        // Добавляем CSS для индикатора загрузки
+        const style = document.createElement('style');
+        style.textContent = `
+            .spinner {
+                border: 4px solid rgba(0, 0, 0, 0.1);
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                border-left-color: #1DB954;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 10px;
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+            .track-search-item {
+                display: flex;
+                align-items: center;
+                padding: 10px;
+                border-radius: 4px;
+                margin-bottom: 10px;
+                background-color: #282828;
+                cursor: pointer;
+                transition: background-color 0.2s;
+            }
+            
+            .track-search-item:hover {
+                background-color: #333;
+            }
+            
+            .track-search-image {
+                width: 60px;
+                height: 60px;
+                object-fit: cover;
+                margin-right: 15px;
+                border-radius: 4px;
+            }
+            
+            .track-search-info {
+                flex-grow: 1;
+            }
+            
+            .track-search-name {
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+            
+            .track-search-artist {
+                color: #b3b3b3;
+                font-size: 0.9em;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Добавляем обработчик для клавиши Enter в поле поиска
+        searchInput.addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                searchTracks();
+            }
+        });
+    }
+
+    // Функция для открытия модального окна поиска треков
+    function openTrackSearchModal() {
+        const modal = document.getElementById('track-search-modal');
+        if (modal) {
+            modal.style.display = 'block';
+            // Устанавливаем фокус на поле ввода
+            setTimeout(() => {
+                document.getElementById('track-search-input').focus();
+            }, 100);
+        }
+    }
+
+    // Функция для поиска треков
+    function searchTracks() {
+        const searchInput = document.getElementById('track-search-input');
+        const resultsContainer = document.getElementById('track-search-results');
+        const loadingIndicator = document.getElementById('track-search-loading');
+        
+        // Получаем поисковый запрос
+        const query = searchInput.value.trim();
+        if (!query) {
+            showNotification('Введите название трека для поиска', true);
+            return;
+        }
+        
+        // Показываем индикатор загрузки
+        resultsContainer.innerHTML = '';
+        loadingIndicator.style.display = 'block';
+        
+        // Выполняем запрос к API
+        fetch(`/spotify/search-tracks?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                // Скрываем индикатор загрузки
+                loadingIndicator.style.display = 'none';
+                
+                if (!data.success) {
+                    showNotification('Ошибка при поиске треков: ' + data.error, true);
+                    return;
+                }
+                
+                // Проверяем, есть ли результаты
+                if (!data.tracks || data.tracks.length === 0) {
+                    resultsContainer.innerHTML = '<p style="text-align: center; color: #b3b3b3;">Треки не найдены</p>';
+                    return;
+                }
+                
+                // Отображаем результаты поиска
+                data.tracks.forEach(track => {
+                    const trackItem = createTrackSearchItem(track);
+                    resultsContainer.appendChild(trackItem);
+                });
+            })
+            .catch(error => {
+                loadingIndicator.style.display = 'none';
+                console.error('Ошибка при поиске треков:', error);
+                showNotification('Ошибка при поиске треков', true);
+            });
+    }
+
+    // Функция для создания элемента с результатом поиска
+    function createTrackSearchItem(track) {
+        const trackItem = document.createElement('div');
+        trackItem.className = 'track-search-item';
+        trackItem.setAttribute('data-track-id', track.id);
+        trackItem.setAttribute('data-track-uri', track.uri);
+        
+        // Добавляем обложку трека
+        const trackImage = document.createElement('img');
+        trackImage.className = 'track-search-image';
+        
+        if (track.album && track.album.images && track.album.images.length > 0) {
+            trackImage.src = track.album.images[0].url;
+        } else {
+            trackImage.src = '/static/images/default-album.png'; // Путь к дефолтному изображению
+        }
+        
+        trackImage.alt = track.name;
+        
+        // Добавляем информацию о треке
+        const trackInfo = document.createElement('div');
+        trackInfo.className = 'track-search-info';
+        
+        const trackName = document.createElement('div');
+        trackName.className = 'track-search-name';
+        trackName.textContent = track.name;
+        
+        const trackArtist = document.createElement('div');
+        trackArtist.className = 'track-search-artist';
+        
+        // Собираем имена артистов
+        if (track.artists && track.artists.length > 0) {
+            trackArtist.textContent = track.artists.map(artist => artist.name).join(', ');
+        }
+        
+        // Собираем все элементы вместе
+        trackInfo.appendChild(trackName);
+        trackInfo.appendChild(trackArtist);
+        
+        trackItem.appendChild(trackImage);
+        trackItem.appendChild(trackInfo);
+        
+        // Добавляем обработчик события клика
+        trackItem.addEventListener('click', function() {
+            const trackId = this.getAttribute('data-track-id');
+            getSimilarTracks(trackId);
+        });
+        
+        return trackItem;
+    }
+
+    // Функция для получения похожих треков
+    function getSimilarTracks(trackId) {
+        // Закрываем модальное окно поиска
+        document.getElementById('track-search-modal').style.display = 'none';
+        
+        // Показываем уведомление о поиске похожих треков
+        showNotification('Ищем похожие треки...', false);
+        
+        // Выполняем запрос к API
+    // Отправляем запрос на получение похожих треков
+    fetch('/spotify/get-similar-tracks?track_id=' + trackId)
+      .then(function(response) {
+        if (!response.ok) {
+          throw new Error('Ошибка сервера: ' + response.status);
+        }
+        return response.json();
+      })
+      .then(function(data) {
+        console.log("Получены рекомендации:", data.tracks ? data.tracks.length : 0);
+        
+        // Возвращаем кнопку в исходное состояние (хотя модальное окно уже закрыто)
+        this.innerHTML = 'Similar';
+        this.disabled = false;
+        
+        if (data.success && data.tracks && data.tracks.length > 0) {
+          // Отображаем рекомендации
+          displayRecommendations(data.tracks);
+          saveTracksToSession(data.tracks);
+          // Показываем кнопки действий
+          document.getElementById('action-buttons').style.display = 'block';
+        } else {
+          recommendationsContainer.innerHTML = `
+            <div class="alert alert-warning">
+              Не удалось получить похожие треки: ${data.error || 'Нет данных'}
+            </div>
+          `;
+        }
+      }.bind(this))
+      .catch(function(error) {
+        console.error("Ошибка при запросе похожих треков:", error);
+        
+        // Возвращаем кнопку в исходное состояние
+        this.innerHTML = 'Similar';
+        this.disabled = false;
+        
+        // Показываем сообщение об ошибке
+        recommendationsContainer.innerHTML = `
+          <div class="alert alert-danger">
+            Ошибка при получении похожих треков: ${error.message}
+          </div>
+        `;
+      }.bind(this));
+  }
 </script>
 
 <!-- Добавьте перед закрывающим тегом </body> -->

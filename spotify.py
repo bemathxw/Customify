@@ -1391,3 +1391,57 @@ def create_playlist_with_all_tracks():
     except Exception as e:
         logger.error(f"Ошибка при создании плейлиста: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 200
+    
+@spotify_bp.route('/search-tracks', methods=['GET'])
+def search_tracks():
+    """Поиск треков по названию"""
+    try:
+        # Получаем параметр запроса
+        query = request.args.get('q')
+        if not query:
+            return jsonify({
+                'success': False,
+                'error': 'Параметр поиска не указан'
+            })
+        
+        # Получаем заголовки авторизации
+        headers = get_headers()
+        if not headers:
+            return jsonify({
+                'success': False,
+                'error': 'Ошибка авторизации'
+            })
+        
+        # Выполняем запрос к API Spotify
+        response = requests.get(
+            'https://api.spotify.com/v1/search',
+            headers=headers,
+            params={
+                'q': query,
+                'type': 'track',
+                'limit': 10
+            }
+        )
+        
+        # Проверяем ответ
+        if response.status_code != 200:
+            return jsonify({
+                'success': False,
+                'error': f'Ошибка API Spotify: {response.status_code}'
+            })
+        
+        # Получаем результаты
+        data = response.json()
+        tracks = data.get('tracks', {}).get('items', [])
+        
+        return jsonify({
+            'success': True,
+            'tracks': tracks
+        })
+    
+    except Exception as e:
+        logger.error(f"Ошибка при поиске треков: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': f'Внутренняя ошибка сервера: {str(e)}'
+        })
