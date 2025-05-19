@@ -228,6 +228,65 @@
   </div>
 </div>
 
+<!-- Модальное окно выбора плейлиста -->
+<div id="playlist-modal" class="modal">
+  <div class="modal-content playlist-modal-content">
+    <div class="modal-header">
+      <h3>Добавить в плейлист</h3>
+      <span class="close-playlist-modal">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="search-container">
+        <input type="text" id="playlist-search" placeholder="Поиск плейлистов...">
+        <i class="fas fa-search search-icon"></i>
+      </div>
+      <div class="playlists-container">
+        <div class="playlists-list" id="playlists-list">
+          <!-- Плейлисты будут добавлены здесь динамически -->
+          <div class="playlist-loading">
+            <div class="spinner"></div>
+          </div>
+        </div>
+      </div>
+      <div class="create-playlist-container">
+        <button id="create-playlist-btn" class="create-playlist-btn">
+          <i class="fas fa-plus"></i> Создать новый плейлист
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Модальное окно создания нового плейлиста -->
+<div id="create-playlist-modal" class="modal">
+  <div class="modal-content create-playlist-modal-content">
+    <div class="modal-header">
+      <h3>Создать плейлист</h3>
+      <span class="close-create-modal">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="create-playlist-form">
+        <div class="form-group">
+          <label for="playlist-name">Название плейлиста</label>
+          <input type="text" id="playlist-name" required placeholder="Введите название плейлиста">
+        </div>
+        <div class="form-group">
+          <label for="playlist-description">Описание (необязательно)</label>
+          <textarea id="playlist-description" placeholder="Введите описание плейлиста"></textarea>
+        </div>
+        <div class="form-group checkbox-group">
+          <input type="checkbox" id="playlist-public">
+          <label for="playlist-public">Публичный плейлист</label>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="cancel-btn close-create-modal">Отмена</button>
+          <button type="submit" class="submit-btn">Создать</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script type="text/javascript">
 // Используем самовызывающуюся функцию для изоляции скопа
 (function() {
@@ -1849,6 +1908,246 @@ function showNotification(message, isError = false) {
     // Вызываем функцию при загрузке страницы
     document.addEventListener('DOMContentLoaded', getSessionTracks);
 
+    // Функция для добавления всех треков из сессии в плейлист
+    function addAllTracksToPlaylist(playlistId) {
+      // Показываем индикатор загрузки
+      playlistsList.innerHTML = `<div class="playlist-loading"><div class="spinner"></div></div>`;
+      
+      fetch('/spotify/add-all-tracks-to-playlist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          playlist_id: playlistId
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Успешное добавление
+          playlistModal.style.display = 'none';
+          showNotification(`${data.added_count} треков успешно добавлено в плейлист`);
+        } else {
+          // Ошибка
+          loadPlaylists(); // Перезагружаем плейлисты
+          showNotification(data.error || 'Ошибка при добавлении треков в плейлист', true);
+        }
+      })
+      .catch(error => {
+        console.error('Ошибка при добавлении треков в плейлист:', error);
+        loadPlaylists(); // Перезагружаем плейлисты
+        showNotification('Ошибка при добавлении треков в плейлист', true);
+      });
+    }
+
+    // Функция для создания плейлиста со всеми треками из сессии
+    function createPlaylistWithAllTracks(name, description, isPublic) {
+      return fetch('/spotify/create-playlist-with-all-tracks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: name,
+          description: description,
+          public: isPublic
+        })
+      })
+      .then(response => response.json());
+    }
+
+    // Функция рендеринга плейлистов с поддержкой режима "add all"
+    function renderPlaylists(playlists, isAddAllMode = false) {
+      if (playlists.length === 0) {
+        playlistsList.innerHTML = `<div class="playlist-message">
+          Плейлисты не найдены
+        </div>`;
+        return;
+      }
+      
+      let html = '';
+      playlists.forEach(playlist => {
+        const coverUrl = playlist.images && playlist.images.length > 0 
+          ? playlist.images[0].url 
+          : '/static/images/default-playlist.png';
+        
+        html += `
+          <div class="playlist-item" data-id="${playlist.id}">
+            <img src="${coverUrl}" alt="${playlist.name}">
+            <div class="playlist-info">
+              <div class="playlist-name">${playlist.name}</div>
+              <div class="playlist-details">
+                ${playlist.tracks.total} треков • ${playlist.public ? 'Публичный' : 'Приватный'}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      playlistsList.innerHTML = html;
+      
+      // Добавляем обработчики для элементов плейлиста
+      const playlistItems = document.querySelectorAll('.playlist-item');
+      playlistItems.forEach(item => {
+        item.addEventListener('click', () => {
+          const playlistId = item.getAttribute('data-id');
+          if (isAddAllMode) {
+            addAllTracksToPlaylist(playlistId);
+          } else {
+            addTrackToPlaylist(playlistId);
+          }
+        });
+      });
+    }
+
+    // Модифицируем функцию загрузки плейлистов, чтобы поддерживать режим "add all"
+    function loadPlaylists(isAddAllMode = false) {
+      playlistsList.innerHTML = `<div class="playlist-loading"><div class="spinner"></div></div>`;
+      
+      fetch('/spotify/get-my-playlists')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success && data.playlists) {
+            allPlaylists = data.playlists;
+            filteredPlaylists = [...allPlaylists];
+            renderPlaylists(allPlaylists, isAddAllMode);
+          } else {
+            playlistsList.innerHTML = `<div class="playlist-message">
+              Не удалось загрузить плейлисты: ${data.error || 'Неизвестная ошибка'}
+            </div>`;
+          }
+        })
+        .catch(error => {
+          console.error('Ошибка при загрузке плейлистов:', error);
+          playlistsList.innerHTML = `<div class="playlist-message">
+            Ошибка при загрузке плейлистов
+          </div>`;
+        });
+    }
+
+    // Модифицируем функцию создания плейлиста для поддержки режима "add all"
+    if (createPlaylistForm) {
+      createPlaylistForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        
+        const playlistName = document.getElementById('playlist-name').value;
+        const playlistDesc = document.getElementById('playlist-description').value;
+        const isPublic = document.getElementById('playlist-public').checked;
+        
+        // Показываем индикатор загрузки на кнопке
+        const submitBtn = createPlaylistForm.querySelector('.submit-btn');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<div class="spinner-small"></div>';
+        submitBtn.disabled = true;
+        
+        // Если есть currentTrackUri, то добавляем один трек,
+        // иначе добавляем все треки из сессии
+        if (currentTrackUri) {
+          fetch('/spotify/create-playlist', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              name: playlistName,
+              description: playlistDesc,
+              public: isPublic,
+              track_uri: currentTrackUri
+            })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              // Закрываем модальное окно
+              createPlaylistModal.style.display = 'none';
+              showNotification('Плейлист успешно создан и трек добавлен');
+              
+              // Сбрасываем форму
+              createPlaylistForm.reset();
+            } else {
+              showNotification(data.error || 'Ошибка при создании плейлиста', true);
+            }
+          })
+          .catch(error => {
+            console.error('Ошибка при создании плейлиста:', error);
+            showNotification('Ошибка при создании плейлиста', true);
+          })
+          .finally(() => {
+            // Восстанавливаем кнопку
+            submitBtn.innerHTML = originalBtnText;
+            submitBtn.disabled = false;
+          });
+        } else {
+          // Создаем плейлист со всеми треками из сессии
+          createPlaylistWithAllTracks(playlistName, playlistDesc, isPublic)
+            .then(data => {
+              if (data.success) {
+                // Закрываем модальное окно
+                createPlaylistModal.style.display = 'none';
+                showNotification(`Плейлист успешно создан и ${data.added_count || 0} треков добавлено`);
+                
+                // Сбрасываем форму
+                createPlaylistForm.reset();
+              } else {
+                showNotification(data.error || 'Ошибка при создании плейлиста', true);
+              }
+            })
+            .catch(error => {
+              console.error('Ошибка при создании плейлиста:', error);
+              showNotification('Ошибка при создании плейлиста', true);
+            })
+            .finally(() => {
+              // Восстанавливаем кнопку
+              submitBtn.innerHTML = originalBtnText;
+              submitBtn.disabled = false;
+            });
+        }
+      });
+    }
+
+    // Функция открытия модального окна для добавления всех треков в плейлист
+    window.showPlaylistSelectorForAllTracks = function() {
+      // Сбрасываем URI одного трека
+      currentTrackUri = '';
+      
+      // Закрываем другие модальные окна
+      const trackModal = document.getElementById('trackModal');
+      if (trackModal && trackModal.style.display === 'block') {
+          trackModal.style.display = 'none';
+      }
+      
+      // Загружаем плейлисты в режиме "add all"
+      loadPlaylists(true);
+      
+      // Показываем модальное окно
+      playlistModal.style.display = 'block';
+    };
+
+    // Привязываем обработчик для кнопки "Add All to Playlist"
+    document.addEventListener('DOMContentLoaded', function() {
+      // ... existing code ...
+      
+      // Кнопка "Add All to Playlist"
+      const addAllToPlaylistBtn = document.querySelector('form[action="/add-to-playlist"] button');
+      if (addAllToPlaylistBtn) {
+        // Отменяем отправку формы
+        const form = addAllToPlaylistBtn.closest('form');
+        if (form) {
+          form.addEventListener('submit', function(event) {
+            event.preventDefault();
+          });
+        }
+        
+        // Добавляем обработчик нажатия
+        addAllToPlaylistBtn.addEventListener('click', function(event) {
+          event.preventDefault();
+          showPlaylistSelectorForAllTracks();
+        });
+      }
+    });
+
+    // ... existing code ...
 </script>
 
 <!-- Добавьте перед закрывающим тегом </body> -->
@@ -2033,6 +2332,283 @@ function applyModalStyles() {
 
 // Вызываем функцию сразу после загрузки страницы
 document.addEventListener('DOMContentLoaded', applyModalStyles);
+</script>
+
+<script type="text/javascript">
+// JavaScript для работы с модальным окном плейлистов
+(function() {
+  // Элементы модальных окон
+  const playlistModal = document.getElementById('playlist-modal');
+  const createPlaylistModal = document.getElementById('create-playlist-modal');
+  const playlistsList = document.getElementById('playlists-list');
+  const playlistSearch = document.getElementById('playlist-search');
+  
+  // Кнопки и закрытия
+  const closePlaylistModal = document.querySelector('.close-playlist-modal');
+  const closeCreateModal = document.querySelectorAll('.close-create-modal');
+  const createPlaylistBtn = document.getElementById('create-playlist-btn');
+  const createPlaylistForm = document.getElementById('create-playlist-form');
+  
+  // Глобальные переменные
+  let currentTrackUri = '';
+  let allPlaylists = [];
+  let filteredPlaylists = [];
+  
+  // Привязка обработчиков модальных окон
+  if (closePlaylistModal) {
+    closePlaylistModal.addEventListener('click', () => {
+      playlistModal.style.display = 'none';
+    });
+  }
+  
+  closeCreateModal.forEach(btn => {
+    btn.addEventListener('click', () => {
+      createPlaylistModal.style.display = 'none';
+    });
+  });
+  
+  // Закрытие при клике вне модального окна
+  window.addEventListener('click', (event) => {
+    if (event.target === playlistModal) {
+      playlistModal.style.display = 'none';
+    }
+    if (event.target === createPlaylistModal) {
+      createPlaylistModal.style.display = 'none';
+    }
+  });
+  
+  // Открытие окна создания плейлиста
+  if (createPlaylistBtn) {
+    createPlaylistBtn.addEventListener('click', () => {
+      playlistModal.style.display = 'none';
+      createPlaylistModal.style.display = 'block';
+    });
+  }
+  
+  // Поиск по плейлистам
+  if (playlistSearch) {
+    playlistSearch.addEventListener('input', () => {
+      const searchTerm = playlistSearch.value.toLowerCase();
+      filterPlaylists(searchTerm);
+    });
+  }
+  
+  // Функция фильтрации плейлистов
+  function filterPlaylists(searchTerm) {
+    filteredPlaylists = allPlaylists.filter(playlist => 
+      playlist.name.toLowerCase().includes(searchTerm)
+    );
+    renderPlaylists(filteredPlaylists);
+  }
+  
+  // Функция загрузки плейлистов
+  function loadPlaylists() {
+    playlistsList.innerHTML = `<div class="playlist-loading"><div class="spinner"></div></div>`;
+    
+    fetch('/spotify/get-my-playlists')
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.playlists) {
+          allPlaylists = data.playlists;
+          filteredPlaylists = [...allPlaylists];
+          renderPlaylists(allPlaylists);
+        } else {
+          playlistsList.innerHTML = `<div class="playlist-message">
+            Не удалось загрузить плейлисты: ${data.error || 'Неизвестная ошибка'}
+          </div>`;
+        }
+      })
+      .catch(error => {
+        console.error('Ошибка при загрузке плейлистов:', error);
+        playlistsList.innerHTML = `<div class="playlist-message">
+          Ошибка при загрузке плейлистов
+        </div>`;
+      });
+  }
+  
+  // Функция отрисовки плейлистов
+  function renderPlaylists(playlists) {
+    if (playlists.length === 0) {
+      playlistsList.innerHTML = `<div class="playlist-message">
+        Плейлисты не найдены
+      </div>`;
+      return;
+    }
+    
+    let html = '';
+    playlists.forEach(playlist => {
+      const coverUrl = playlist.images && playlist.images.length > 0 
+        ? playlist.images[0].url 
+        : '/static/images/default-playlist.png';
+      
+      html += `
+        <div class="playlist-item" data-id="${playlist.id}">
+          <img src="${coverUrl}" alt="${playlist.name}">
+          <div class="playlist-info">
+            <div class="playlist-name">${playlist.name}</div>
+            <div class="playlist-details">
+              ${playlist.tracks.total} треков • ${playlist.public ? 'Публичный' : 'Приватный'}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    playlistsList.innerHTML = html;
+    
+    // Добавляем обработчики для элементов плейлиста
+    const playlistItems = document.querySelectorAll('.playlist-item');
+    playlistItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const playlistId = item.getAttribute('data-id');
+        addTrackToPlaylist(playlistId);
+      });
+    });
+  }
+  
+  // Функция добавления трека в плейлист
+  function addTrackToPlaylist(playlistId) {
+    if (!currentTrackUri) {
+      showNotification('Не выбран трек для добавления', true);
+      return;
+    }
+    
+    // Показываем индикатор загрузки
+    playlistsList.innerHTML = `<div class="playlist-loading"><div class="spinner"></div></div>`;
+    
+    fetch('/spotify/add-track-to-playlist', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        playlist_id: playlistId,
+        track_uri: currentTrackUri
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Успешное добавление
+        playlistModal.style.display = 'none';
+        showNotification('Трек успешно добавлен в плейлист');
+      } else {
+        // Ошибка
+        loadPlaylists(); // Перезагружаем плейлисты
+        showNotification(data.error || 'Ошибка при добавлении в плейлист', true);
+      }
+    })
+    .catch(error => {
+      console.error('Ошибка при добавлении трека в плейлист:', error);
+      loadPlaylists(); // Перезагружаем плейлисты
+      showNotification('Ошибка при добавлении трека в плейлист', true);
+    });
+  }
+  
+  // Функция создания нового плейлиста
+  if (createPlaylistForm) {
+    createPlaylistForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      
+      const playlistName = document.getElementById('playlist-name').value;
+      const playlistDesc = document.getElementById('playlist-description').value;
+      const isPublic = document.getElementById('playlist-public').checked;
+      
+      // Показываем индикатор загрузки на кнопке
+      const submitBtn = createPlaylistForm.querySelector('.submit-btn');
+      const originalBtnText = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<div class="spinner-small"></div>';
+      submitBtn.disabled = true;
+      
+      fetch('/spotify/create-playlist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: playlistName,
+          description: playlistDesc,
+          public: isPublic,
+          track_uri: currentTrackUri // Если нужно сразу добавить трек
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Закрываем модальное окно
+          createPlaylistModal.style.display = 'none';
+          showNotification('Плейлист успешно создан' + (currentTrackUri ? ' и трек добавлен' : ''));
+          
+          // Сбрасываем форму
+          createPlaylistForm.reset();
+        } else {
+          showNotification(data.error || 'Ошибка при создании плейлиста', true);
+        }
+      })
+      .catch(error => {
+        console.error('Ошибка при создании плейлиста:', error);
+        showNotification('Ошибка при создании плейлиста', true);
+      })
+      .finally(() => {
+        // Восстанавливаем кнопку
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.disabled = false;
+      });
+    });
+  }
+  
+  // Заменяем функцию для показа модального окна плейлистов
+  window.showPlaylistSelector = function(trackUri) {
+    currentTrackUri = trackUri;
+    
+    // Закрываем модальное окно трека, если оно открыто
+    const trackModal = document.getElementById('trackModal');
+    if (trackModal && trackModal.style.display === 'block') {
+        trackModal.style.display = 'none';
+    }
+    
+    // Загружаем плейлисты
+    loadPlaylists();
+    
+    // Показываем модальное окно
+    playlistModal.style.display = 'block';
+  };
+  
+  // Привязка к кнопке в плеере
+  document.addEventListener('DOMContentLoaded', function() {
+    // Кнопка в модальном окне трека
+    const modalPlaylistBtn = document.getElementById('modal-playlist-btn');
+    if (modalPlaylistBtn) {
+        modalPlaylistBtn.onclick = function() {
+            const trackModal = document.getElementById('trackModal');
+            const trackUri = trackModal.getAttribute('data-track-uri');
+            // Закрываем модальное окно трека
+            trackModal.style.display = 'none';
+            // Открываем окно выбора плейлиста
+            showPlaylistSelector(trackUri);
+        };
+    }
+    
+    // Кнопка в плеере (если есть)
+    const playerPlaylistBtn = document.querySelector('.player-add-to-playlist');
+    if (playerPlaylistBtn) {
+      playerPlaylistBtn.addEventListener('click', function() {
+        // Получаем URI текущего трека из плеера
+        const currentTrackElement = document.querySelector('[data-current-track-uri]');
+        if (currentTrackElement) {
+          const trackUri = currentTrackElement.getAttribute('data-current-track-uri');
+          if (trackUri) {
+            showPlaylistSelector(trackUri);
+          } else {
+            showNotification('Не удалось определить текущий трек', true);
+          }
+        } else {
+          showNotification('Нет воспроизводимого трека', true);
+        }
+      });
+    }
+  });
+})();
 </script>
 
 </body>

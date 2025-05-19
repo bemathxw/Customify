@@ -222,77 +222,95 @@ def logout():
 @profile_function
 def create_playlist():
     """
-    Create a Spotify playlist with recommended tracks.
-    
-    This route takes track URIs from the request and creates a new
-    Spotify playlist with those tracks.
+    Создает новый плейлист и опционально добавляет в него трек.
     
     Returns:
-        JSON response with success status and playlist information
+        JSON с результатом операции
     """
-    logger.info("Processing create playlist request")
-    
     try:
-        # Check if user is authenticated
         if "spotify_token" not in session:
-            raise AuthenticationError("Not authenticated with Spotify")
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
         
-        # Get track URIs from request
-        data = request.get_json()
-        if not data or "track_uris" not in data:
-            raise DataProcessingError(
-                "No track URIs provided",
-                data_type="request_data"
-            )
+        # Получаем данные из запроса
+        data = request.json
+        if not data or "name" not in data:
+            return jsonify({"success": False, "error": "Не указано название плейлиста"}), 200
         
-        track_uris = data["track_uris"]
-        playlist_name = data.get("playlist_name", "Customify Recommendations")
+        name = data["name"]
+        description = data.get("description", "")
+        is_public = data.get("public", False)
+        track_uri = data.get("track_uri", None)
         
-        if not track_uris:
-            raise DataProcessingError(
-                "Empty track URIs list",
-                data_type="track_uris"
-            )
+        # Получаем заголовки с токеном
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
         
-        # Create playlist
-        success = create_playlist_with_tracks(track_uris, playlist_name)
+        # Получаем ID пользователя
+        user_response = requests.get(f"{SPOTIFY_API_BASE_URL}/me", headers=headers)
+        if user_response.status_code != 200:
+            return jsonify({"success": False, "error": "Не удалось получить данные пользователя"}), 200
         
-        if success:
-            logger.info(f"Playlist '{playlist_name}' created successfully")
+        user_id = user_response.json()["id"]
+        
+        # Создаем плейлист
+        playlist_response = requests.post(
+            f"{SPOTIFY_API_BASE_URL}/users/{user_id}/playlists",
+            headers=headers,
+            json={
+                "name": name,
+                "description": description,
+                "public": is_public
+            }
+        )
+        
+        if playlist_response.status_code not in [200, 201]:
+            error_message = "Ошибка при создании плейлиста"
+            try:
+                error_data = playlist_response.json()
+                if "error" in error_data and "message" in error_data["error"]:
+                    error_message = error_data["error"]["message"]
+            except:
+                pass
             
-            # Отслеживаем создание плейлиста
-            track_playlist_interaction("create", track_count=len(track_uris))
-            
-            return jsonify({
-                "success": True,
-                "message": "Playlist created successfully!"
-            })
-        else:
-            raise DataProcessingError(
-                "Failed to create playlist",
-                data_type="playlist_creation"
-            )
-    except AppError as e:
-        logger.error(f"Error creating playlist: {str(e)}", exc_info=True)
+            logger.error(f"Ошибка при создании плейлиста: {playlist_response.status_code} {error_message}")
+            return jsonify({"success": False, "error": error_message}), 200
         
-        # Отслеживаем ошибку
-        track_user_error("playlist_error", str(e))
+        playlist_data = playlist_response.json()
+        playlist_id = playlist_data["id"]
+        
+        logger.info(f"Создан плейлист {name} (ID: {playlist_id})")
+        
+        # Если указан URI трека, добавляем его в плейлист
+        if track_uri:
+            track_response = requests.post(
+                f"{SPOTIFY_API_BASE_URL}/playlists/{playlist_id}/tracks",
+                headers=headers,
+                json={"uris": [track_uri]}
+            )
+            
+            if track_response.status_code not in [200, 201]:
+                logger.warning(f"Не удалось добавить трек {track_uri} в новый плейлист: {track_response.status_code}")
+                # Возвращаем успех создания плейлиста, но с предупреждением
+                return jsonify({
+                    "success": True,
+                    "warning": "Плейлист создан, но возникла ошибка при добавлении трека"
+                })
+            
+            logger.info(f"Трек {track_uri} добавлен в новый плейлист {playlist_id}")
         
         return jsonify({
-            "success": False,
-            "error": str(e),
-            "error_id": getattr(e, "error_id", None)
-        }), 400
+            "success": True,
+            "playlist": {
+                "id": playlist_id,
+                "name": name,
+                "external_url": playlist_data.get("external_urls", {}).get("spotify", "")
+            }
+        })
+            
     except Exception as e:
-        logger.error(f"Unexpected error creating playlist: {str(e)}", exc_info=True)
-        
-        # Отслеживаем ошибку
-        track_user_error("unexpected_error", str(e))
-        
-        return jsonify({
-            "success": False,
-            "error": "An unexpected error occurred"
-        }), 500
+        logger.error(f"Ошибка при создании плейлиста: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 200
 
 @spotify_bp.route("/add-recommendations-to-queue", methods=["POST"])
 def add_recommendations_to_queue():
@@ -1080,3 +1098,296 @@ def get_session_tracks():
         return jsonify({"success": True, "tracks": tracks})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+@spotify_bp.route("/get-my-playlists")
+def get_my_playlists():
+    """
+    Получает список плейлистов пользователя.
+    
+    Returns:
+        JSON с плейлистами пользователя
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        # Получаем заголовки с токеном
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        # Получаем плейлисты пользователя
+        playlists = []
+        next_url = f"{SPOTIFY_API_BASE_URL}/me/playlists?limit=50"
+        
+        while next_url:
+            response = requests.get(next_url, headers=headers)
+            
+            if response.status_code != 200:
+                return jsonify({"success": False, "error": f"Ошибка API Spotify: {response.status_code}"}), 200
+                
+            data = response.json()
+            playlists.extend(data["items"])
+            next_url = data.get("next")
+        
+        logger.info(f"Получено {len(playlists)} плейлистов пользователя")
+        return jsonify({"success": True, "playlists": playlists})
+            
+    except Exception as e:
+        logger.error(f"Ошибка при получении плейлистов: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/add-track-to-playlist", methods=["POST"])
+def add_track_to_playlist():
+    """
+    Добавляет трек в указанный плейлист.
+    
+    Returns:
+        JSON с результатом операции
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        # Получаем данные из запроса
+        data = request.json
+        if not data or "playlist_id" not in data or "track_uri" not in data:
+            return jsonify({"success": False, "error": "Не указан ID плейлиста или URI трека"}), 200
+        
+        playlist_id = data["playlist_id"]
+        track_uri = data["track_uri"]
+        
+        # Получаем заголовки с токеном
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        # Добавляем трек в плейлист
+        response = requests.post(
+            f"{SPOTIFY_API_BASE_URL}/playlists/{playlist_id}/tracks",
+            headers=headers,
+            json={"uris": [track_uri]}
+        )
+        
+        if response.status_code in [200, 201]:
+            logger.info(f"Трек {track_uri} успешно добавлен в плейлист {playlist_id}")
+            return jsonify({"success": True})
+        else:
+            error_message = "Ошибка при добавлении трека в плейлист"
+            try:
+                error_data = response.json()
+                if "error" in error_data and "message" in error_data["error"]:
+                    error_message = error_data["error"]["message"]
+            except:
+                pass
+            
+            logger.error(f"Ошибка при добавлении трека в плейлист: {response.status_code} {error_message}")
+            return jsonify({"success": False, "error": error_message}), 200
+            
+    except Exception as e:
+        logger.error(f"Ошибка при добавлении трека в плейлист: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/add-all-tracks-to-playlist", methods=["POST"])
+def add_all_tracks_to_playlist():
+    """
+    Добавляет все треки из сессии в указанный плейлист.
+    
+    Returns:
+        JSON с результатом операции
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        # Получаем данные из запроса
+        data = request.json
+        if not data or "playlist_id" not in data:
+            return jsonify({"success": False, "error": "Не указан ID плейлиста"}), 200
+        
+        playlist_id = data["playlist_id"]
+        
+        # Получаем треки из сессии
+        tracks = session.get("recommended_tracks", [])
+        
+        if not tracks:
+            return jsonify({"success": False, "error": "Нет треков для добавления"}), 200
+        
+        # Получаем заголовки с токеном
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        # Преобразуем треки в URI формат
+        track_uris = []
+        for track in tracks:
+            track_id = None
+            
+            if isinstance(track, str):
+                # Если это просто строка ID
+                track_id = track
+            elif isinstance(track, dict):
+                # Если это объект с полями
+                track_id = track.get('id')
+                if not track_id and 'uri' in track:
+                    # Извлекаем ID из URI если есть
+                    uri_parts = track['uri'].split(':')
+                    if len(uri_parts) == 3 and uri_parts[1] == 'track':
+                        track_id = uri_parts[2]
+            
+            if track_id:
+                track_uris.append(f"spotify:track:{track_id}")
+        
+        if not track_uris:
+            return jsonify({"success": False, "error": "Не удалось извлечь ID треков"}), 200
+        
+        # Добавляем треки в плейлист группами по 100 (ограничение API Spotify)
+        added_count = 0
+        for i in range(0, len(track_uris), 100):
+            batch = track_uris[i:i+100]
+            
+            response = requests.post(
+                f"{SPOTIFY_API_BASE_URL}/playlists/{playlist_id}/tracks",
+                headers=headers,
+                json={"uris": batch}
+            )
+            
+            if response.status_code in [200, 201]:
+                added_count += len(batch)
+            else:
+                error_message = "Ошибка при добавлении треков в плейлист"
+                try:
+                    error_data = response.json()
+                    if "error" in error_data and "message" in error_data["error"]:
+                        error_message = error_data["error"]["message"]
+                except:
+                    pass
+                
+                logger.error(f"Ошибка при добавлении треков в плейлист: {response.status_code} {error_message}")
+                return jsonify({"success": False, "error": error_message}), 200
+        
+        logger.info(f"Добавлено {added_count} треков в плейлист {playlist_id}")
+        return jsonify({"success": True, "added_count": added_count})
+            
+    except Exception as e:
+        logger.error(f"Ошибка при добавлении треков в плейлист: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/create-playlist-with-all-tracks", methods=["POST"])
+def create_playlist_with_all_tracks():
+    """
+    Создает новый плейлист и добавляет в него все треки из сессии.
+    
+    Returns:
+        JSON с результатом операции
+    """
+    try:
+        if "spotify_token" not in session:
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
+        
+        # Получаем данные из запроса
+        data = request.json
+        if not data or "name" not in data:
+            return jsonify({"success": False, "error": "Не указано название плейлиста"}), 200
+        
+        name = data["name"]
+        description = data.get("description", "")
+        is_public = data.get("public", False)
+        
+        # Получаем треки из сессии
+        tracks = session.get("recommended_tracks", [])
+        
+        if not tracks:
+            return jsonify({"success": False, "error": "Нет треков для добавления"}), 200
+        
+        # Получаем заголовки с токеном
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        # Получаем ID пользователя
+        user_response = requests.get(f"{SPOTIFY_API_BASE_URL}/me", headers=headers)
+        if user_response.status_code != 200:
+            return jsonify({"success": False, "error": "Не удалось получить данные пользователя"}), 200
+        
+        user_id = user_response.json()["id"]
+        
+        # Создаем плейлист
+        playlist_response = requests.post(
+            f"{SPOTIFY_API_BASE_URL}/users/{user_id}/playlists",
+            headers=headers,
+            json={
+                "name": name,
+                "description": description,
+                "public": is_public
+            }
+        )
+        
+        if playlist_response.status_code not in [200, 201]:
+            error_message = "Ошибка при создании плейлиста"
+            try:
+                error_data = playlist_response.json()
+                if "error" in error_data and "message" in error_data["error"]:
+                    error_message = error_data["error"]["message"]
+            except:
+                pass
+            
+            logger.error(f"Ошибка при создании плейлиста: {playlist_response.status_code} {error_message}")
+            return jsonify({"success": False, "error": error_message}), 200
+        
+        playlist_data = playlist_response.json()
+        playlist_id = playlist_data["id"]
+        
+        logger.info(f"Создан плейлист {name} (ID: {playlist_id})")
+        
+        # Преобразуем треки в URI формат
+        track_uris = []
+        for track in tracks:
+            track_id = None
+            
+            if isinstance(track, str):
+                # Если это просто строка ID
+                track_id = track
+            elif isinstance(track, dict):
+                # Если это объект с полями
+                track_id = track.get('id')
+                if not track_id and 'uri' in track:
+                    # Извлекаем ID из URI если есть
+                    uri_parts = track['uri'].split(':')
+                    if len(uri_parts) == 3 and uri_parts[1] == 'track':
+                        track_id = uri_parts[2]
+            
+            if track_id:
+                track_uris.append(f"spotify:track:{track_id}")
+        
+        # Добавляем треки в плейлист группами по 100 (ограничение API Spotify)
+        added_count = 0
+        for i in range(0, len(track_uris), 100):
+            batch = track_uris[i:i+100]
+            
+            response = requests.post(
+                f"{SPOTIFY_API_BASE_URL}/playlists/{playlist_id}/tracks",
+                headers=headers,
+                json={"uris": batch}
+            )
+            
+            if response.status_code in [200, 201]:
+                added_count += len(batch)
+            else:
+                logger.warning(f"Ошибка при добавлении треков в новый плейлист: {response.status_code}")
+        
+        logger.info(f"Добавлено {added_count} треков в новый плейлист {playlist_id}")
+        
+        return jsonify({
+            "success": True,
+            "added_count": added_count,
+            "playlist": {
+                "id": playlist_id,
+                "name": name,
+                "external_url": playlist_data.get("external_urls", {}).get("spotify", "")
+            }
+        })
+            
+    except Exception as e:
+        logger.error(f"Ошибка при создании плейлиста: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 200
