@@ -1320,7 +1320,7 @@ input[type="checkbox"]:checked {
   max-width: 90%;
   max-height: 80vh;
   border-radius: 10px;
-  background: #1e1e2e;
+  background: #181818;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   overflow: hidden;
 }
@@ -1330,8 +1330,6 @@ input[type="checkbox"]:checked {
   justify-content: space-between;
   align-items: center;
   padding: 15px 20px;
-  border-bottom: 1px solid #313143;
-  background: #2a2a3a;
 }
 
 .modal-header h3 {
@@ -1369,7 +1367,7 @@ input[type="checkbox"]:checked {
   padding: 10px 40px 10px 15px;
   border-radius: 20px;
   border: none;
-  background: #333344;
+  background: #222222;
   color: #ffffff;
   font-size: 14px;
 }
@@ -1387,7 +1385,7 @@ input[type="checkbox"]:checked {
   overflow-y: auto;
   margin-bottom: 15px;
   border-radius: 5px;
-  background: #252535;
+  background: #222222;
 }
 
 .playlists-list {
@@ -1403,7 +1401,7 @@ input[type="checkbox"]:checked {
 }
 
 .playlist-item:hover {
-  background: #333344;
+  background: #222222;
 }
 
 .playlist-item img {
@@ -1487,10 +1485,27 @@ input[type="checkbox"]:checked {
   padding: 10px 15px;
   border-radius: 5px;
   border: none;
-  background: #333344;
+  background: #222222;  
   color: #ffffff;
   font-size: 14px;
 }
+
+::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background-color: #666;     /* цвет ползунка */
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #888;
+  }
 
 .form-group textarea {
   min-height: 80px;

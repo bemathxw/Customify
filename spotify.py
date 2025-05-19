@@ -540,7 +540,7 @@ def toggle_playback():
             # Если на паузе - воспроизводим
             response = requests.put(f"{SPOTIFY_API_BASE_URL}/me/player/play", headers=headers)
         
-        if response.status_code in [204, 202]:
+        if response.status_code in [204, 202, 200]:
             return jsonify({
                 "success": True,
                 "is_playing": not is_playing
@@ -572,7 +572,7 @@ def next_track():
         
         response = requests.post(f"{SPOTIFY_API_BASE_URL}/me/player/next", headers=headers)
         
-        if response.status_code in [204, 202]:
+        if response.status_code in [204, 202, 200]:
             return jsonify({"success": True})
         
         return jsonify({
@@ -601,7 +601,7 @@ def previous_track():
         
         response = requests.post(f"{SPOTIFY_API_BASE_URL}/me/player/previous", headers=headers)
         
-        if response.status_code in [204, 202]:
+        if response.status_code in [204, 202, 200]:
             return jsonify({"success": True})
         
         return jsonify({
@@ -637,7 +637,7 @@ def seek_position():
             params={"position_ms": position_ms}
         )
         
-        if response.status_code in [204, 202]:
+        if response.status_code in [204, 202, 200]:
             return jsonify({"success": True})
         
         return jsonify({
@@ -673,7 +673,7 @@ def set_volume():
             params={"volume_percent": volume_percent}
         )
         
-        if response.status_code in [204, 202]:
+        if response.status_code in [204, 202, 200]:
             return jsonify({"success": True})
         
         return jsonify({
@@ -718,7 +718,7 @@ def toggle_shuffle():
             headers=headers
         )
         
-        if response.status_code in [204, 202]:
+        if response.status_code in [204, 202, 200]:
             return jsonify({
                 "success": True,
                 "shuffle_state": new_state
@@ -771,7 +771,7 @@ def toggle_repeat():
             headers=headers
         )
         
-        if response.status_code in [204, 202]:
+        if response.status_code in [204, 202, 200]:
             return jsonify({
                 "success": True,
                 "repeat_state": new_state
@@ -1014,7 +1014,7 @@ def play_track():
             json=payload
         )
         
-        if response.status_code in [204, 202]:
+        if response.status_code in [204, 202, 200]:
             return jsonify({"success": True})
         
         error_info = ""

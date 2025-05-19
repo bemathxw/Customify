@@ -877,11 +877,25 @@ function showNotification(message, isError = false) {
         
         // Обработчик для кнопки "добавить в плейлист"
         document.getElementById('btn-add-to-playlist').addEventListener('click', function() {
-            if (currentTrackData && currentTrackData.item) {
-                showPlaylistSelector();
-                // Обновляем информацию
-                setTimeout(fetchNowPlaying, 500);
+            // Получаем ID текущего трека из атрибута данных
+            const nowPlayingBar = document.getElementById('now-playing-bar');
+            const trackId = nowPlayingBar.getAttribute('data-current-track-id');
+            const trackName = nowPlayingBar.getAttribute('data-current-track-name');
+            
+            if (!trackId) {
+                console.error('Не удалось получить ID текущего трека');
+                showNotification('Не удалось определить текущий трек', true);
+                return;
             }
+            
+            console.log('Открываем выбор плейлиста для трека:', trackId, trackName);
+            
+            // Сохраняем ID трека для использования при добавлении в плейлист
+            document.getElementById('playlist-selector').setAttribute('data-track-id', trackId);
+            
+            trackUri = 'spotify:track:' + trackId;
+            // Открываем модальное окно выбора плейлиста
+            showPlaylistSelector(trackUri);
         });
         
         // Прогресс-бар трека (кликабельный)
@@ -926,7 +940,6 @@ function showNotification(message, isError = false) {
     
     // Обновление данных о текущем треке и синхронизация локального счетчика
     function fetchNowPlaying() {
-        console.log('Обновление информации о треке...');
         
         fetch('/spotify/now-playing')
             .then(response => response.json())
@@ -1046,7 +1059,14 @@ function showNotification(message, isError = false) {
     
     // Обновление интерфейса плеера на основе полученных данных
     function updatePlayerUI(data) {
-        console.log('Обновление UI плеера');
+        
+        // Сохраняем ID и URI текущего трека в атрибуты данных плеера
+        const nowPlayingBar = document.getElementById('now-playing-bar');
+        if (nowPlayingBar) {
+            nowPlayingBar.setAttribute('data-current-track-id', data.item.id);
+            nowPlayingBar.setAttribute('data-current-track-uri', data.item.uri);
+            nowPlayingBar.setAttribute('data-current-track-name', data.item.name);
+        }
         
         // Обновляем название трека
         const trackElement = document.getElementById('now-playing-track');
@@ -1499,7 +1519,7 @@ function showNotification(message, isError = false) {
     
 
     // Обновление состояния кнопки воспроизведения/паузы
-    function updatePlayPauseButton(isPlaying) {
+    function  updatePlayPauseButton(isPlaying) {
         const iconPlay = document.getElementById('icon-play');
         const iconPause = document.getElementById('icon-pause');
         
@@ -2026,7 +2046,7 @@ function applyModalStyles() {
     #trackModal .modal-content {
       background-color: #181818 !important;
       color: #fff !important;
-      margin: 30% auto !important;
+      margin-top: 25% auto !important;
       padding: 20px !important;
       border-radius: 8px !important;
       box-shadow: 0 4px 30px rgba(0, 0, 0, 0.7) !important;
