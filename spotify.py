@@ -295,57 +295,103 @@ def create_playlist():
         }), 500
 
 @spotify_bp.route("/add-recommendations-to-queue", methods=["POST"])
-@profile_function
 def add_recommendations_to_queue():
     """
-    Add recommended tracks to the user's Spotify queue.
-    
-    This route takes the recommended tracks and adds them to the user's
-    Spotify playback queue.
+    Добавляет рекомендуемые треки из сессии в очередь воспроизведения.
     
     Returns:
-        Redirect to profile page with success/error message
+        JSON с результатом операции
     """
-    logger.info("Processing add recommendations to queue request")
-    
     try:
-        # Проверяем, авторизован ли пользователь
         if "spotify_token" not in session:
-            logger.warning("User not authenticated for queue addition")
-            flash("You need to log in to add tracks to your queue", "error")
-            
-            # Отслеживаем ошибку
-            track_user_error("auth_error", "Not authenticated for queue addition")
-            
-            return redirect(url_for('profile'))
+            return jsonify({"success": False, "error": "Требуется авторизация"}), 200
         
-        # Проверяем, является ли пользователь премиум-пользователем
+        # Получаем треки из сессии
+        tracks = session.get("recommended_tracks", [])
+        
+        if not tracks:
+            return jsonify({"success": False, "error": "Нет треков для добавления"}), 200
+        
+        # Получаем заголовки с токеном
+        headers = get_headers()
+        if not headers:
+            return jsonify({"success": False, "error": "Недействительный токен"}), 200
+        
+        # Проверяем, является ли пользователь премиум-подписчиком (только они могут управлять очередью)
         if not is_premium_user():
-            logger.warning("Non-premium user attempted to add to queue")
-            flash("You need Spotify Premium to add tracks to your queue", "error")
+            return jsonify({
+                "success": False, 
+                "error": "Добавление в очередь доступно только для пользователей Spotify Premium"
+            }), 200
+        
+        # Проверяем есть ли активное устройство
+        device_response = requests.get(f"{SPOTIFY_API_BASE_URL}/me/player/devices", headers=headers)
+        if device_response.status_code != 200 or not device_response.json().get("devices"):
+            return jsonify({
+                "success": False,
+                "error": "Нет активных устройств воспроизведения. Откройте Spotify на любом устройстве."
+            }), 200
             
-            # Отслеживаем ошибку
-            track_user_error("premium_required", "Non-premium user attempted to add to queue")
+        # Добавляем треки в очередь по одному (так работает API Spotify)
+        successful_tracks = 0
+        
+        for track in tracks:
+            # Извлекаем ID трека из объекта, обрабатывая разные возможные форматы
+            track_id = None
             
-            return redirect(url_for('profile'))
+            if isinstance(track, str):
+                # Если это просто строка ID
+                track_id = track
+            elif isinstance(track, dict):
+                # Если это объект с полями
+                track_id = track.get('id')
+                if not track_id and 'uri' in track:
+                    # Извлекаем ID из URI если есть
+                    uri_parts = track['uri'].split(':')
+                    if len(uri_parts) == 3 and uri_parts[1] == 'track':
+                        track_id = uri_parts[2]
+            
+            if not track_id:
+                logger.warning(f"Не удалось извлечь ID трека из объекта: {track}")
+                continue
+                
+            # Формируем URI для добавления в очередь
+            uri = f"spotify:track:{track_id}"
+            
+            # Добавляем трек в очередь
+            response = requests.post(
+                f"{SPOTIFY_API_BASE_URL}/me/player/queue",
+                headers=headers,
+                params={"uri": uri}
+            )
+            
+            if response.status_code == 200:
+                successful_tracks += 1
+                logger.info(f"Трек {track_id} успешно добавлен в очередь")
+            else:
+                error_text = ""
+                try:
+                    error_text = response.json().get("error", {}).get("message", "")
+                except:
+                    pass
+                
+                logger.warning(f"Не удалось добавить трек {track_id} в очередь: {response.status_code} {error_text}")
         
-        # Отслеживаем взаимодействие с рекомендациями
-        track_recommendation_interaction("add_to_queue", track_ids=session.get("recommended_tracks", []))
-        
-        # В реальном приложении здесь должен быть код для добавления треков в очередь
-        # Для этого нужно использовать Spotify API endpoint /me/player/queue
-        
-        # Здесь мы просто перенаправляем на страницу профиля с сообщением
-        flash("This feature is not fully implemented yet", "info")
-        return redirect(url_for('profile'))
+        # Возвращаем результат
+        if successful_tracks > 0:
+            return jsonify({
+                "success": True,
+                "message": f"Добавлено {successful_tracks} из {len(tracks)} треков в очередь"
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Не удалось добавить треки в очередь. Проверьте активное устройство."
+            })
+            
     except Exception as e:
-        logger.error(f"Error adding to queue: {str(e)}", exc_info=True)
-        
-        # Отслеживаем ошибку
-        track_user_error("queue_error", str(e))
-        
-        flash(f"An error occurred: {str(e)}", "error")
-        return redirect(url_for('profile'))
+        logger.error(f"Ошибка при добавлении треков в очередь: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 200
 
 # Добавляем новый маршрут для отслеживания взаимодействий с фронтенда
 @spotify_bp.route("/track-interaction", methods=["POST"])
@@ -997,3 +1043,40 @@ def get_similar_tracks_endpoint():
     except Exception as e:
         logger.error(f"Ошибка при получении похожих треков: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/save-tracks-to-session", methods=["POST"])
+def save_tracks_to_session():
+    """
+    Сохраняет список треков в сессии пользователя.
+    
+    Returns:
+        JSON response с подтверждением
+    """
+    try:
+        session["recommended_tracks"] = None
+        data = request.json
+        if not data or "tracks" not in data:
+            return jsonify({"success": False, "error": "No tracks provided"}), 200
+            
+        tracks = data["tracks"]
+        session["recommended_tracks"] = tracks
+        logger.info(f"Saved {len(tracks)} tracks to session")
+        
+        return jsonify({"success": True})
+    except Exception as e:
+        logger.error(f"Error saving tracks to session: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 200
+
+@spotify_bp.route("/get-session-tracks")
+def get_session_tracks():
+    """
+    Возвращает треки из сессии в формате JSON
+    
+    Returns:
+        JSON с треками из сессии
+    """
+    try:
+        tracks = session.get("recommended_tracks", [])
+        return jsonify({"success": True, "tracks": tracks})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})

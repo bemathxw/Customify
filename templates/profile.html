@@ -70,9 +70,7 @@
         <!-- Секция рекомендаций с загрузчиком -->
         <h2>Recommended Tracks</h2>
         <div id="recommendations-container">
-            <div class="loading-spinner">
-                <div class="spinner"></div>
-            </div>
+          <!-- Сюда загрузятся рекомендации -->
         </div>
 
         <!-- Кнопки действий будут показаны после загрузки рекомендаций -->
@@ -82,7 +80,7 @@
             </form>
             {% if premium_user %}
             <form action="{{ url_for('spotify.add_recommendations_to_queue') }}" method="post">
-                <button type="submit" class="btn btn-primary mt-4">Add All Recommended Tracks to Queue</button>
+                <button type="submit" id="add-to-queue-btn" class="btn btn-primary mt-4">Add All Recommended Tracks to Queue</button>
             </form>
             {% else %}
             <!-- Неактивная кнопка, если пользователь без премиума -->
@@ -165,7 +163,7 @@
                         <path d="M13.764 2.727a4.057 4.057 0 00-5.488-.253.558.558 0 01-.31.112.531.531 0 01-.311-.112 4.054 4.054 0 00-5.487.253A4.05 4.05 0 00.974 5.61c0 1.089.424 2.113 1.168 2.855l4.462 5.223a1.791 1.791 0 002.726 0l4.435-5.195A4.052 4.052 0 0014.96 5.61a4.057 4.057 0 00-1.196-2.883zm-.722 5.098L8.58 13.048c-.307.36-.921.36-1.228 0L2.864 7.797a3.072 3.072 0 01-.905-2.187c0-.826.321-1.603.905-2.187a3.091 3.091 0 012.191-.913 3.05 3.05 0 011.957.709c.041.036.408.351.954.351.531 0 .906-.31.94-.34a3.075 3.075 0 014.161.192 3.1 3.1 0 01-.025 4.403z"></path>
                     </svg>
                     <svg id="icon-like-filled" height="16" width="16" viewBox="0 0 16 16" fill="#1ed760" style="display: none;">
-                        <path d="M15.724 4.22A4.313 4.313 0 0012.192.814a4.269 4.269 0 00-3.622 1.13.837.837 0 01-1.14 0 4.272 4.272 0 00-6.21 5.855l5.916 7.05a1.128 1.128 0 001.727 0l5.916-7.05a4.228 4.228 0 00.945-3.577z"></path>
+                        <path d="M15.724 4.22A4.313 4.313 0 0012.192.814a4.269 4.269 0 00-3.622 1.13.837.837 0 01-.112.31.531.531 0 01-.311-.112 4.054 4.054 0 00-5.487.253A4.05 4.05 0 00.974 5.61c0 1.089.424 2.113 1.168 2.855l4.462 5.223a1.791 1.791 0 002.726 0l4.435-5.195A4.052 4.052 0 0014.96 5.61a4.057 4.057 0 00-1.196-2.883zm-.722 5.098L8.58 13.048c-.307.36-.921.36-1.228 0L2.864 7.797a3.072 3.072 0 01-.905-2.187c0-.826.321-1.603.905-2.187a3.091 3.091 0 012.191-.913 3.05 3.05 0 011.957.709c.041.036.408.351.954.351.531 0 .906-.31.94-.34a3.075 3.075 0 014.161.192 3.1 3.1 0 01-.025 4.403z"></path>
                     </svg>
                 </button>
                 <button id="btn-add-to-playlist" class="control-button add-playlist-button" title="Добавить в плейлист">
@@ -470,7 +468,7 @@
     
     // URL эндпоинта в зависимости от текущего статуса
     var url = isLiked ? '/spotify/remove-saved-track' : '/spotify/save-track';
-    var method = isLiked ? 'DELETE' : 'PUT';
+    var method = isLiked ? 'DELETE' : 'POST';
     
     fetch(url, {
       method: method,
@@ -560,7 +558,7 @@
         if (data.success && data.tracks && data.tracks.length > 0) {
           // Отображаем рекомендации
           displayRecommendations(data.tracks);
-          
+          saveTracksToSession(data.tracks);
           // Показываем кнопки действий
           document.getElementById('action-buttons').style.display = 'flex';
         } else {
@@ -589,6 +587,117 @@
   
   console.log("Модальное окно для треков инициализировано!");
 })();
+
+// Обработчик для кнопки добавления в очередь с предотвращением перехода
+document.addEventListener('DOMContentLoaded', function() {
+    // Находим кнопку добавления в очередь
+    const addToQueueButton = document.getElementById('add-to-queue-btn');
+    
+    if (addToQueueButton) {
+        // Если это ссылка, предотвращаем поведение по умолчанию
+        if (addToQueueButton.tagName.toLowerCase() === 'a') {
+            addToQueueButton.setAttribute('href', 'javascript:void(0);');
+        }
+        
+        // Удаляем все существующие обработчики
+        const newButton = addToQueueButton.cloneNode(true);
+        addToQueueButton.parentNode.replaceChild(newButton, addToQueueButton);
+        
+        // Добавляем новый обработчик
+        newButton.addEventListener('click', function(event) {
+            // Предотвращаем стандартное поведение
+            event.preventDefault();
+            event.stopPropagation();
+            
+            console.log('Добавление рекомендаций в очередь...');
+            
+            // Сохраняем оригинальный контент кнопки
+            const originalContent = this.innerHTML;
+            
+            // Показываем спиннер в кнопке
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Добавление...';
+            this.disabled = true;
+            
+            // Делаем запрос на добавление треков в очередь
+            fetch('/spotify/add-recommendations-to-queue', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Треки добавлены в очередь воспроизведения');
+                } else {
+                    showNotification(data.error || 'Ошибка при добавлении треков в очередь', true);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка запроса:', error);
+                showNotification('Не удалось добавить треки в очередь', true);
+            })
+            .finally(() => {
+                // Восстанавливаем кнопку
+                this.innerHTML = originalContent;
+                this.disabled = false;
+            });
+            
+            // Возвращаем false для дополнительной защиты от перехода
+            return false;
+        });
+    }
+});
+
+// Добавляем функцию showNotification, если её нет
+function showNotification(message, isError = false) {
+    console.log(`Уведомление: ${message}, isError: ${isError}`);
+    
+    // Проверяем, существует ли уже контейнер для уведомлений
+    let notificationContainer = document.getElementById('notification-container');
+    
+    // Если контейнера нет, создаем его
+    if (!notificationContainer) {
+        notificationContainer = document.createElement('div');
+        notificationContainer.id = 'notification-container';
+        notificationContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999;';
+        document.body.appendChild(notificationContainer);
+    }
+    
+    // Создаем элемент уведомления
+    const notification = document.createElement('div');
+    notification.className = isError ? 'notification error' : 'notification success';
+    notification.style.cssText = `
+        padding: 12px 20px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        background-color: ${isError ? '#ff4c4c' : '#4caf50'};
+        color: white;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        animation: fadeIn 0.3s ease;
+        font-size: 14px;
+    `;
+    
+    notification.innerHTML = message;
+    
+    // Добавляем уведомление в контейнер
+    notificationContainer.appendChild(notification);
+    
+    // Удаляем уведомление через 5 секунд
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateY(-20px)';
+        notification.style.transition = 'opacity 0.3s, transform 0.3s';
+        
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 5000);
+}
+
+// ... existing code ...
 </script>
 
 <!-- JavaScript для асинхронной загрузки рекомендаций -->
@@ -620,6 +729,7 @@
         // Если на странице есть блок рекомендаций
         if (document.getElementById('recommendations-container')) {
             fetchRecommendations();
+            toggleActionButtons(true);
         }
         
         // Запускаем плеер, если пользователь авторизован
@@ -1241,29 +1351,7 @@
         });
     }
     
-    // Простая система уведомлений
-    function showNotification(message, isError = false) {
-        // Проверяем, существует ли контейнер для уведомлений
-        let notificationContainer = document.getElementById('notification-container');
-        if (!notificationContainer) {
-            notificationContainer = document.createElement('div');
-            notificationContainer.id = 'notification-container';
-            document.body.appendChild(notificationContainer);
-        }
-        
-        const notification = document.createElement('div');
-        notification.className = 'notification ' + (isError ? 'error' : 'success');
-        notification.textContent = message;
-        
-        notificationContainer.appendChild(notification);
-        
-        // Удаляем уведомление через 3 секунды
-        setTimeout(() => {
-            notification.classList.add('fade-out');
-            setTimeout(() => notification.remove(), 500);
-        }, 3000);
-    }
-    
+
     // Обновление состояния кнопки воспроизведения/паузы
     function updatePlayPauseButton(isPlaying) {
         const iconPlay = document.getElementById('icon-play');
@@ -1371,6 +1459,23 @@
         });
     }
 
+    function toggleActionButtons(show) {
+        var actionButtons = document.getElementById('action-buttons');
+        if (!actionButtons) return;
+        
+        if (show) {
+            // Показываем кнопки
+            actionButtons.style.display = 'block';
+            actionButtons.style.marginBottom = '150px';
+            console.log('Кнопки действий показаны');
+        } else {
+            // Скрываем кнопки
+            actionButtons.style.display = 'none';
+            actionButtons.style.marginBottom = '0px';
+            console.log('Кнопки действий скрыты');
+        }
+    }
+
     // Функция получения рекомендаций
     function fetchRecommendations() {
         console.log('Получение рекомендаций через бэкенд Flask...');
@@ -1409,7 +1514,7 @@
                         '<div class="notice-message">Для вас пока нет рекомендаций. Слушайте больше музыки!</div>';
                     return;
                 }
-                
+                saveTracksToSession(data.tracks);
                 // Отображаем рекомендации
                 displayRecommendations(data.tracks);
             })
@@ -1420,6 +1525,28 @@
             });
     }
 
+        // Функция для сохранения ID треков в сессию
+    function saveTracksToSession(trackIds) {
+        console.log('Сохранение треков в сессию:', trackIds);
+        
+        fetch('/spotify/save-tracks-to-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tracks: trackIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Треки успешно сохранены в сессию');
+            } else {
+                console.error('Ошибка сохранения треков в сессию:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка запроса при сохранении треков:', error);
+        });
+    }
+    
     // Функция отображения рекомендаций
     function displayRecommendations(tracks) {
         console.log('Отображение рекомендаций. Количество треков:', tracks.length);
@@ -1620,12 +1747,16 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.tracks && data.tracks.length > 0) {
+                    // Сохраняем ID треков в сессию, заменяя предыдущие рекомендации
+                    const trackIds = data.tracks.map(track => track.id);
+                    
                     container.innerHTML = `
                         <h2 class="section-title">Похожие треки</h2>
                         <div class="track-list" id="recommendations-list"></div>
                     `;
                     
                     displayRecommendations(data.tracks);
+                    saveTracksToSession(data.tracks);
                     container.scrollIntoView({ behavior: 'smooth' });
                     setupTrackInteractions();
                 } else {
@@ -1656,6 +1787,67 @@
         
         observer.observe(document.body, { childList: true, subtree: true });
     });
+
+
+
+
+    // Функция отображения рекомендованных треков
+    function displayRecommendedTracks(tracks) {
+      var recommendationsContainer = document.getElementById('recommendations-container');
+      
+      // Очищаем контейнер
+      recommendationsContainer.innerHTML = '';
+      
+      // Создаем список треков
+      var trackList = document.createElement('div');
+      trackList.className = 'track-list';
+      
+      // Добавляем каждый трек
+      tracks.forEach(function(track) {
+        var trackItem = createTrackElement(track);
+        trackList.appendChild(trackItem);
+      });
+      
+      // Добавляем список в контейнер
+      recommendationsContainer.appendChild(trackList);
+      
+      // Показываем кнопки действий и убеждаемся, что они видимы
+      var actionButtons = document.getElementById('action-buttons');
+      actionButtons.style.display = 'flex';
+      actionButtons.style.marginTop = '20px';
+      actionButtons.style.marginBottom = '30px';
+      actionButtons.style.justifyContent = 'center';
+      actionButtons.style.gap = '15px';
+      
+      // Проверяем, что дочерние кнопки тоже видимы
+      var buttons = actionButtons.querySelectorAll('button');
+      buttons.forEach(function(btn) {
+        btn.style.display = 'inline-block';
+        btn.style.visibility = 'visible';
+        btn.style.opacity = '1';
+      });
+      
+      console.log("Рекомендации отображены, кнопки действий установлены в видимое состояние");
+    }
+
+    // Получаем и выводим треки из сессии
+    function getSessionTracks() {
+        fetch('/spotify/get-session-tracks')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Треки из сессии:', data.tracks);
+                } else {
+                    console.error('Ошибка получения треков из сессии:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка запроса:', error);
+            });
+    }
+
+    // Вызываем функцию при загрузке страницы
+    document.addEventListener('DOMContentLoaded', getSessionTracks);
 
 </script>
 
