@@ -1,4 +1,4 @@
-/* Обновленные стили для модального окна треков в стиле плеера */
+/* Updated styles for track modal window in player style */
 #trackModal.modal {
     display: none;
     position: fixed !important;
@@ -154,7 +154,7 @@
     color: #E91E63;
 }
 
-/* Для мобильных устройств */
+/* For mobile devices */
 @media (max-width: 480px) {
     #trackModal .modal-track-info {
         flex-direction: column;

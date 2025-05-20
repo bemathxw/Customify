@@ -6,107 +6,6 @@
     <title>Profile</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <style>
-        .loading-spinner {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 200px;
-        }
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(0, 0, 0, 0.1);
-            border-radius: 50%;
-            border-top-color: #3498db;
-            animation: spin 1s ease-in-out infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        /* Стили для профиля пользователя */
-        .user-profile-header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-        
-        .user-avatar-container {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            overflow: hidden;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            background-color: #282828;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .user-avatar {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .default-avatar {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100%;
-            background-color: #333;
-        }
-        
-        .user-name {
-            font-size: 24px;
-            font-weight: 700;
-            margin: 0;
-            color: #fff;
-        }
-        
-        .profile-description {
-            color: #b3b3b3;
-            text-align: center;
-            margin-bottom: 25px;
-        }
-        
-        .recommendations-header-container {
-            display: inline-flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        #refresh-recommendations {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            transition: all 0.2s ease;
-            margin-left: 20px;
-            margin-bottom: 7px;
-        }
-        
-        #refresh-recommendations:hover {
-            background-color: #1db954;
-            color: white;
-            border-color: #1db954;
-            transform: scale(1.05);
-        }
-        
-        #refresh-recommendations svg {
-            transition: transform 0.3s ease;
-        }
-        
-        #refresh-recommendations:hover svg {
-            transform: rotate(180deg);
-        }
-    </style>
 </head>
 <body>
 
@@ -115,7 +14,7 @@
         <a href="{{ url_for('home') }}">Customify</a>
     </div>
     {% if show_login_button %}
-    <!-- Не должно быть ссылок на logout здесь -->
+    <!-- There should be no links to logout here -->
     {% else %}
     <div class="auth-buttons">
         <a href="{{ url_for('spotify.logout') }}">Logout</a>
@@ -141,12 +40,12 @@
     </div>
 
     {% if show_login_button %}
-        <!-- Кнопка для входа в Spotify -->
+        <!-- Button for Spotify login -->
         <div class="d-flex justify-content-center">
             <a href="{{ url_for('spotify.login') }}" class="btn btn-primary mt-4 spotic">Login with Spotify</a>
         </div>
     {% else %}
-        <!-- Показать топ треки -->
+        <!-- Show top tracks -->
         <h2>Top Tracks</h2>
         <div class="track-list">
             {% for track in top_tracks %}
@@ -162,10 +61,10 @@
             {% endfor %}
         </div>
 
-        <!-- Секция рекомендаций с заголовком и кнопкой обновления -->
+        <!-- Recommendations section with header and refresh button -->
         <div class="recommendations-header-container">
             <h2>Recommended Tracks</h2>
-            <button id="refresh-recommendations" class="btn btn-outline-success" title="Обновить рекомендации" style="width: 110px;">
+            <button id="refresh-recommendations" class="btn btn-outline-success" title="Refresh recommendations" style="width: 110px;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-repeat" viewBox="0 0 16 16">
                     <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
                     <path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
@@ -174,10 +73,10 @@
             </button>
         </div>
         <div id="recommendations-container">
-          <!-- Сюда загрузятся рекомендации -->
+          <!-- Recommendations will be loaded here -->
         </div>
 
-        <!-- Кнопки действий будут показаны после загрузки рекомендаций -->
+        <!-- Action buttons will be shown after loading recommendations -->
         <div id="action-buttons" style="display: none;">
             <button id="add-all-to-playlist" type="button" class="btn btn-primary mt-4">Add All to Playlist</button>
             {% if premium_user %}
@@ -185,7 +84,7 @@
                 <button type="submit" id="add-to-queue-btn" class="btn btn-primary mt-4">Add All Recommended Tracks to Queue</button>
             </form>
             {% else %}
-            <!-- Неактивная кнопка, если пользователь без премиума -->
+            <!-- Inactive button if user doesn't have premium -->
             <div class="alert alert-warning">
                 You need Spotify Premium to add tracks to your queue.
             </div>
@@ -195,11 +94,11 @@
     {% endif %}
 </div>
 
-<!-- Фиксированный плеер внизу страницы с расширенным функционалом -->
+<!-- Fixed player at the bottom of the page with extended functionality -->
 <div id="now-playing-bar" style="display: none;">
     <div class="now-playing-container">
         <div class="now-playing-left">
-            <img id="now-playing-image" src="" alt="Обложка альбома">
+            <img id="now-playing-image" src="" alt="Album cover">
             <div class="track-info">
                 <div class="track-name-container" style="display: flex; align-items: center;">
                     <span id="now-playing-explicit" class="explicit-badge" style="margin-right: 5px; display: inline-flex; align-items: center;">E</span>
@@ -212,17 +111,17 @@
         <div class="now-playing-center">
             <div class="player-controls">
                 <div class="control-buttons">
-                    <button id="btn-shuffle" class="control-button shuffle-button" title="Включить/выключить перемешивание">
+                    <button id="btn-shuffle" class="control-button shuffle-button" title="Toggle shuffle">
                         <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
                             <path d="M4.5 6.8l.7-.8C4.1 4.7 2.5 4 .9 4v1c1.3 0 2.6.6 3.5 1.6l.1.2zm7.5 4.7c-1.2 0-2.3-.5-3.2-1.3l-.6.8c1 1 2.4 1.5 3.8 1.5V14l3.5-2-3.5-2v1.5zm0-6V7l3.5-2L12 3v1.5c-1.6 0-3.2.7-4.2 2l-3.4 3.9c-.9 1-2.2 1.6-3.5 1.6v1c1.6 0 3.2-.7 4.2-2l3.4-3.9c.9-1 2.2-1.6 3.5-1.6z"></path>
                         </svg>
                     </button>
-                    <button id="btn-prev" class="control-button prev-button" title="Предыдущий трек">
+                    <button id="btn-prev" class="control-button prev-button" title="Previous track">
                         <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
                             <path d="M13 2.5L5 7.119V3H3v10h2V8.881l8 4.619z"></path>
                         </svg>
                     </button>
-                    <button id="btn-play-pause" class="control-button play-button" title="Воспроизведение/Пауза">
+                    <button id="btn-play-pause" class="control-button play-button" title="Play/Pause">
                         <svg id="icon-play" height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
                             <path d="M4.018 14L14.41 8 4.018 2z"></path>
                         </svg>
@@ -230,13 +129,13 @@
                             <path d="M3 2h3v12H3zm7 0h3v12h-3z"></path>
                         </svg>
                     </button>
-                    <button id="btn-next" class="control-button next-button" title="Следующий трек">
+                    <button id="btn-next" class="control-button next-button" title="Next track">
                         <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
                             <path d="M11 3v4.119L3 2.5v11l8-4.619V13h2V3z"></path>
                         </svg>
                     </button>
                     <div class="repeat-button-container">
-                        <button id="btn-repeat" class="control-button repeat-button" title="Повторять трек/альбом">
+                        <button id="btn-repeat" class="control-button repeat-button" title="Repeat track/album">
                             <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
                                 <path d="M5.5 5H10v1.5l3.5-2-3.5-2V4H5.5C3 4 1 6 1 8.5c0 .6.1 1.2.4 1.8l.9-.5C2.1 9.4 2 9 2 8.5 2 6.6 3.6 5 5.5 5zm9.1 1.7l-.9.5c.2.4.3.8.3 1.3 0 1.9-1.6 3.5-3.5 3.5H6v-1.5l-3.5 2 3.5 2V13h4.5C13 13 15 11 15 8.5c0-.6-.1-1.2-.4-1.8z"></path>
                             </svg>
@@ -258,9 +157,9 @@
         </div>
         
         <div class="now-playing-right">
-            <!-- Добавляем кнопки для управления треком -->
+            <!-- Adding buttons for track control -->
             <div class="track-actions-container">
-                <button id="btn-like" class="control-button like-button" title="Добавить/убрать из библиотеки">
+                <button id="btn-like" class="control-button like-button" title="Add/remove from library">
                     <svg id="icon-like-outline" height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
                         <path d="M13.764 2.727a4.057 4.057 0 00-5.488-.253.558.558 0 01-.31.112.531.531 0 01-.311-.112 4.054 4.054 0 00-5.487.253A4.05 4.05 0 00.974 5.61c0 1.089.424 2.113 1.168 2.855l4.462 5.223a1.791 1.791 0 002.726 0l4.435-5.195A4.052 4.052 0 0014.96 5.61a4.057 4.057 0 00-1.196-2.883zm-.722 5.098L8.58 13.048c-.307.36-.921.36-1.228 0L2.864 7.797a3.072 3.072 0 01-.905-2.187c0-.826.321-1.603.905-2.187a3.091 3.091 0 012.191-.913 3.05 3.05 0 011.957.709c.041.036.408.351.954.351.531 0 .906-.31.94-.34a3.075 3.075 0 014.161.192 3.1 3.1 0 01-.025 4.403z"></path>
                     </svg>
@@ -268,7 +167,7 @@
                         <path d="M13.764 2.727a4.057 4.057 0 00-5.488-.253.558.558 0 01-.31.112.531.531 0 01-.311-.112 4.054 4.054 0 00-5.487.253A4.05 4.05 0 00.974 5.61c0 1.089.424 2.113 1.168 2.855l4.462 5.223a1.791 1.791 0 002.726 0l4.435-5.195A4.052 4.052 0 0014.96 5.61a4.057 4.057 0 00-1.196-2.883z"></path>
                     </svg>
                 </button>
-                <button id="btn-add-to-playlist" class="control-button add-playlist-button" title="Добавить в плейлист">
+                <button id="btn-add-to-playlist" class="control-button add-playlist-button" title="Add to playlist">
                     <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
                         <path d="M14 7H9V2H7v5H2v2h5v5h2V9h5z"></path>
                     </svg>
@@ -276,7 +175,7 @@
             </div>
             
             <div class="volume-container">
-                <button id="btn-volume" class="control-button volume-button" title="Громкость">
+                <button id="btn-volume" class="control-button volume-button" title="Volume">
                     <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
                         <path d="M12.945 1.379l-.652.763c1.577 1.462 2.57 3.544 2.57 5.858s-.994 4.396-2.57 5.858l.651.763a8.966 8.966 0 00.001-13.242zm-2.272 2.66l-.651.763a4.484 4.484 0 01-.001 6.397l.651.763c1.04-1 1.691-2.404 1.691-3.961s-.65-2.962-1.69-3.962zM0 5v6h2.804L8 14V2L2.804 5H0zm7-1.268v8.536L3.072 10H1V6h2.072L7 3.732z"></path>
                     </svg>
@@ -288,14 +187,14 @@
                 </div>
             </div>
             
-            <!-- Плейлист-селектор (скрыт по умолчанию) -->
+            <!-- Playlist selector (hidden by default) -->
             <div id="playlist-selector" class="playlist-dropdown" style="display: none;">
                 <div class="playlist-dropdown-header">
-                    <span>Добавить в плейлист</span>
+                    <span>Add to playlist</span>
                     <button id="close-playlist-selector" class="close-button">&times;</button>
                 </div>
                 <div class="playlist-list">
-                    <!-- Плейлисты будут добавлены здесь динамически -->
+                    <!-- Playlists will be added here dynamically -->
                 </div>
             </div>
             
@@ -307,14 +206,14 @@
     </div>
 </div>
 
-<!-- Добавьте в конец страницы перед закрывающим тегом </body> -->
-<!-- Модальное окно для треков -->
+<!-- Add at the end of the page before the closing </body> tag -->
+<!-- Modal window for tracks -->
 <div id="trackModal" class="modal">
   <div class="modal-content">
     <span class="close">&times;</span>
     <div class="modal-track-info">
       <a id="track-cover-link" href="#" target="_blank">
-        <img id="modal-track-cover" src="" alt="Обложка трека">
+        <img id="modal-track-cover" src="" alt="Track cover">
       </a>
       <div class="modal-text">
         <a id="modal-track-name" href="#" target="_blank"></a>
@@ -322,13 +221,13 @@
       </div>
     </div>
     <div class="modal-buttons">
-      <button id="modal-play-btn" title="Воспроизвести">      <svg id="icon-play" height="16" width="16" viewBox="0 0 16 16" fill="currentColor" style="display: block;">
+      <button id="modal-play-btn" title="Play">      <svg id="icon-play" height="16" width="16" viewBox="0 0 16 16" fill="currentColor" style="display: block;">
         <path d="M4.018 14L14.41 8 4.018 2z"></path>
       </svg></button>
-      <button id="modal-like-btn" title="Добавить в избранное">                    <svg id="icon-like-outline" height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
+      <button id="modal-like-btn" title="Add to favorites">                    <svg id="icon-like-outline" height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
         <path d="M13.764 2.727a4.057 4.057 0 00-5.488-.253.558.558 0 01-.31.112.531.531 0 01-.311-.112 4.054 4.054 0 00-5.487.253A4.05 4.05 0 00.974 5.61c0 1.089.424 2.113 1.168 2.855l4.462 5.223a1.791 1.791 0 002.726 0l4.435-5.195A4.052 4.052 0 0014.96 5.61a4.057 4.057 0 00-1.196-2.883zm-.722 5.098L8.58 13.048c-.307.36-.921.36-1.228 0L2.864 7.797a3.072 3.072 0 01-.905-2.187c0-.826.321-1.603.905-2.187a3.091 3.091 0 012.191-.913 3.05 3.05 0 011.957.709c.041.036.408.351.954.351.531 0 .906-.31.94-.34a3.075 3.075 0 014.161.192 3.1 3.1 0 01-.025 4.403z"></path>
     </svg></button>
-      <button id="modal-playlist-btn" title="Добавить в плейлист"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
+      <button id="modal-playlist-btn" title="Add to playlist"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
         <path d="M14 7H9V2H7v5H2v2h5v5h2V9h5z"></path>
       </svg></button>
       <button id="modal-similar-btn" title="Find similar tracks">Similar</button>
@@ -336,21 +235,21 @@
   </div>
 </div>
 
-<!-- Модальное окно выбора плейлиста -->
+<!-- Playlist selection modal -->
 <div id="playlist-modal" class="modal">
   <div class="modal-content playlist-modal-content">
     <div class="modal-header">
-      <h3>Добавить в плейлист</h3>
+      <h3>Add to playlist</h3>
       <span class="close-playlist-modal">&times;</span>
     </div>
     <div class="modal-body">
       <div class="search-container">
-        <input type="text" id="playlist-search" placeholder="Поиск плейлистов...">
+        <input type="text" id="playlist-search" placeholder="Search playlists...">
         <i class="fas fa-search search-icon"></i>
       </div>
       <div class="playlists-container">
         <div class="playlists-list" id="playlists-list">
-          <!-- Плейлисты будут добавлены здесь динамически -->
+          <!-- Playlists will be added here dynamically -->
           <div class="playlist-loading">
             <div class="spinner"></div>
           </div>
@@ -358,37 +257,37 @@
       </div>
       <div class="create-playlist-container">
         <button id="create-playlist-btn" class="create-playlist-btn">
-          <i class="fas fa-plus"></i> Создать новый плейлист
+          <i class="fas fa-plus"></i> Create new playlist
         </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Модальное окно создания нового плейлиста -->
+<!-- Create new playlist modal -->
 <div id="create-playlist-modal" class="modal">
   <div class="modal-content create-playlist-modal-content">
     <div class="modal-header">
-      <h3>Создать плейлист</h3>
+      <h3>Create playlist</h3>
       <span class="close-create-modal">&times;</span>
     </div>
     <div class="modal-body">
       <form id="create-playlist-form">
         <div class="form-group">
-          <label for="playlist-name">Название плейлиста</label>
-          <input type="text" id="playlist-name" required placeholder="Введите название плейлиста">
+          <label for="playlist-name">Playlist name</label>
+          <input type="text" id="playlist-name" required placeholder="Enter playlist name">
         </div>
         <div class="form-group">
-          <label for="playlist-description">Описание (необязательно)</label>
-          <textarea id="playlist-description" placeholder="Введите описание плейлиста"></textarea>
+          <label for="playlist-description">Description (optional)</label>
+          <textarea id="playlist-description" placeholder="Enter playlist description"></textarea>
         </div>
         <div class="form-group checkbox-group">
           <input type="checkbox" id="playlist-public">
-          <label for="playlist-public">Публичный плейлист</label>
+          <label for="playlist-public">Public playlist</label>
         </div>
         <div class="form-actions">
-          <button type="button" class="cancel-btn close-create-modal">Отмена</button>
-          <button type="submit" class="submit-btn">Создать</button>
+          <button type="button" class="cancel-btn close-create-modal">Cancel</button>
+          <button type="submit" class="submit-btn">Create</button>
         </div>
       </form>
     </div>
@@ -396,67 +295,67 @@
 </div>
 
 <script type="text/javascript">
-// Используем самовызывающуюся функцию для изоляции скопа
+// Using self-invoking function to isolate scope
 (function() {
-  console.log("Инициализация модального окна для треков");
+  console.log("Initializing track modal");
   
-  // Получаем модальное окно
+  // Get the modal
   var modal = document.getElementById("trackModal");
   var span = document.querySelector("#trackModal .close");
   
-  // Используем делегирование событий для обработки кликов по track-item
+  // Use event delegation to handle clicks on track-item
   document.addEventListener('click', function(event) {
     var trackItem = event.target.closest('.track-item');
     
     if (trackItem) {
-      // Проверяем, что клик был не по дочернему элементу с собственным обработчиком
+      // Check that the click was not on a child element with its own handler
       if (event.target.closest('a, button')) {
         return;
       }
       
-      console.log("Клик по track-item обнаружен!");
+      console.log("Click on track-item detected!");
       
-      // Получаем URI трека (основной источник ID)
+      // Get track URI (main source of ID)
       var trackUri = trackItem.getAttribute('data-uri');
       var trackId = null;
       
-      // Извлекаем ID из URI (spotify:track:ID)
+      // Extract ID from URI (spotify:track:ID)
       if (trackUri) {
         var match = trackUri.match(/spotify:track:([a-zA-Z0-9]+)/);
         if (match && match[1]) {
           trackId = match[1];
-          console.log("ID трека извлечен из URI:", trackId);
+          console.log("Track ID extracted from URI:", trackId);
         }
       }
       
-      // Остальные данные трека
+      // Other track data
       var trackName = trackItem.querySelector('.track-name').textContent;
       var artistName = trackItem.querySelector('.artist-name').textContent;
       var coverUrl = trackItem.querySelector('.track-cover').src;
       
-      // Получаем ссылки на трек и артиста
+      // Get links to track and artist
       var trackLink = null;
       var trackNameElement = trackItem.querySelector('.track-name');
       if (trackNameElement && trackNameElement.getAttribute('href')) {
-        console.log("ссылка есть")
+        console.log("link exists")
         trackLink = trackNameElement.getAttribute('href');
       } else if (trackId) {
-        // Если ссылки нет, но есть ID, создаем стандартную ссылку
-        console.log("ссылки нет, но есть айди")
+        // If there's no link but there's an ID, create a standard link
+        console.log("no link but there's an ID")
         trackLink = 'spotify:track:' + trackId;
       }
       
-      // Получаем ID артиста и ссылку на артиста из href
+      // Get artist ID and link from href
       var artistId = null;
       var artistLink = null;
       var artistElement = trackItem.querySelector('.artist-name');
       if (artistElement) {
         var href = artistElement.getAttribute('href');
         if (href) {
-          // Сохраняем ссылку на артиста
+          // Save artist link
           artistLink = href;
           
-          // Извлекаем ID артиста
+          // Extract artist ID
           if (href.includes('spotify:artist:')) {
             artistId = href.split('spotify:artist:')[1];
           } else if (href.includes('/artist/')) {
@@ -467,25 +366,25 @@
       trackUri = trackLink
       trackId = trackLink.split(':')[2];
       trackId = trackUri.split(':')[2];
-      console.log("Данные трека:", { id: trackId, uri: trackUri, name: trackName, trackLink: trackLink, artistId: artistId, artistLink: artistLink });
+      console.log("Track data:", { id: trackId, uri: trackUri, name: trackName, trackLink: trackLink, artistId: artistId, artistLink: artistLink });
       
-      // Открываем модальное окно
+      // Open modal
       openTrackModal(trackId, trackUri, trackName, artistName, coverUrl, artistId, trackLink, artistLink);
     }
   });
   
-  // Функция открытия модального окна для трека
+  // Function to open track modal
   function openTrackModal(trackId, trackUri, trackName, artistName, coverUrl, artistId, trackLink, artistLink) {
-    console.log("Открываем модальное окно для трека:", { id: trackId, name: trackName, trackLink: trackLink, artistLink: artistLink });
+    console.log("Opening modal for track:", { id: trackId, name: trackName, trackLink: trackLink, artistLink: artistLink });
     
-    // Сохраняем ID и URI в атрибутах модального окна
+    // Save ID and URI in modal attributes
     modal.setAttribute('data-track-id', trackId);
     modal.setAttribute('data-track-uri', trackUri);
     
-    // Заполняем информацией
+    // Fill with information
     document.getElementById('modal-track-name').textContent = trackName;
     
-    // Используем переданную ссылку на трек или создаем стандартную
+    // Use provided track link or create standard one
     if (trackLink) {
       document.getElementById('modal-track-name').href = trackLink;
       document.getElementById('track-cover-link').href = trackLink;
@@ -496,7 +395,7 @@
     
     document.getElementById('modal-artist-name').textContent = artistName;
     
-    // Используем переданную ссылку на артиста или создаем стандартную
+    // Use provided artist link or create standard one
     if (artistLink) {
       document.getElementById('modal-artist-name').href = artistLink;
     } else if (artistId) {
@@ -507,82 +406,82 @@
     
     document.getElementById('modal-track-cover').src = coverUrl;
     
-    // Проверяем, лайкнут ли трек
+    // Check if track is liked
     checkIfTrackIsLiked(trackId);
     
-    // Показываем модальное окно
+    // Show modal
     modal.style.display = 'block';
     
-    console.log("Модальное окно открыто для трека:", trackName);
+    console.log("Modal opened for track:", trackName);
   }
   
-  // Функция для проверки, лайкнут ли трек
+  // Function to check if track is liked
   function checkIfTrackIsLiked(trackId) {
-    console.log("Проверка статуса лайка для трека:", trackId);
+    console.log("Checking like status for track:", trackId);
     
-    // Проверяем, что ID трека существует
+    // Check that track ID exists
     if (!trackId) {
-      console.warn("ID трека не указан, проверка лайка невозможна");
+      console.warn("Track ID not specified, like check not possible");
       return;
     }
     
-    // Кнопка лайка
+    // Like button
     var likeBtn = document.getElementById('modal-like-btn');
     
-    // Сбрасываем предыдущее состояние
+    // Reset previous state
     likeBtn.classList.remove('active');
-    // Заменяем текстовый символ на SVG иконку
+    // Replace text symbol with SVG icon
     likeBtn.innerHTML = `<svg id="icon-like-outline" height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
       <path d="M13.764 2.727a4.057 4.057 0 00-5.488-.253.558.558 0 01-.31.112.531.531 0 01-.311-.112 4.054 4.054 0 00-5.487.253A4.05 4.05 0 00.974 5.61c0 1.089.424 2.113 1.168 2.855l4.462 5.223a1.791 1.791 0 002.726 0l4.435-5.195A4.052 4.052 0 0014.96 5.61a4.057 4.057 0 00-1.196-2.883zm-.722 5.098L8.58 13.048c-.307.36-.921.36-1.228 0L2.864 7.797a3.072 3.072 0 01-.905-2.187c0-.826.321-1.603.905-2.187a3.091 3.091 0 012.191-.913 3.05 3.05 0 011.957.709c.041.036.408.351.954.351.531 0 .906-.31.94-.34a3.075 3.075 0 014.161.192 3.1 3.1 0 01-.025 4.403z"></path>
     </svg>`;
     
-    // Запрос к бэкенду Flask c правильным эндпоинтом и параметром
+    // Request to Flask backend with correct endpoint and parameter
     fetch('/spotify/check-saved-track?track_id=' + trackId)
       .then(function(response) { 
         if (!response.ok) {
-          throw new Error('Ошибка сервера: ' + response.status);
+          throw new Error('Server error: ' + response.status);
         }
         return response.json(); 
       })
       .then(function(data) {
-        console.log("Ответ от сервера для проверки лайка:", data);
-        // Проверяем поле is_saved из ответа
+        console.log("Server response for like check:", data);
+        // Check is_saved field from response
         if (data.success && data.is_saved) {
           likeBtn.classList.add('active');
-          // Заменяем на SVG заполненное сердце
+          // Replace with SVG filled heart
           likeBtn.innerHTML = `<svg id="icon-like-filled" height="16" width="16" viewBox="0 0 16 16" fill="#1ed760">
             <path d="M13.764 2.727a4.057 4.057 0 00-5.488-.253.558.558 0 01-.31.112.531.531 0 01-.311-.112 4.054 4.054 0 00-5.487.253A4.05 4.05 0 00.974 5.61c0 1.089.424 2.113 1.168 2.855l4.462 5.223a1.791 1.791 0 002.726 0l4.435-5.195A4.052 4.052 0 0014.96 5.61a4.057 4.057 0 00-1.196-2.883z"></path>
           </svg>`;
         }
       })
       .catch(function(error) {
-        console.error("Ошибка при проверке статуса лайка:", error);
+        console.error("Error checking like status:", error);
       });
   }
   
-  // Закрытие модального окна при клике на крестик
+  // Close modal when clicking on the X
   span.onclick = function() {
     modal.style.display = 'none';
   }
   
-  // Закрытие модального окна при клике на фон
+  // Close modal when clicking on the background
   window.onclick = function(event) {
     if (event.target == modal) {
       modal.style.display = 'none';
     }
   }
   
-  // Обработчик кнопки воспроизведения
+  // Play button handler
   document.getElementById('modal-play-btn').onclick = function() {
     var trackUri = modal.getAttribute('data-track-uri');
     var trackId = modal.getAttribute('data-track-id');
-    console.log("Воспроизведение трека:", { uri: trackUri, id: trackId });
+    console.log("Playing track:", { uri: trackUri, id: trackId });
     
-    // Показываем индикатор загрузки в кнопке
+    // Show loading indicator in the button
     this.innerHTML = '<span class="spinner-small"></span>';
     this.disabled = true;
     
-    // Отправляем запрос на воспроизведение трека
+    // Send request to play the track
     fetch('/spotify/play-track', {
       method: 'POST',
       headers: {
@@ -592,54 +491,54 @@
     })
     .then(function(response) {
       if (!response.ok) {
-        throw new Error('Ошибка сервера: ' + response.status);
+        throw new Error('Server error: ' + response.status);
       }
       return response.json();
     })
     .then(function(data) {
-      console.log("Ответ от сервера:", data);
+      console.log("Server response:", data);
       
-      // Возвращаем кнопку в исходное состояние
+      // Return button to original state
       this.innerHTML = '▶';
       this.disabled = false;
       
       if (data.success) {
-        // Закрываем модальное окно
+        // Close modal window
         modal.style.display = 'none';
         
-        // Обновляем информацию о текущем треке через 1 секунду
+        // Update current track info after 1 second
         setTimeout(fetchNowPlaying, 1000);
       } else {
-        console.error("Ошибка при воспроизведении трека:", data.error);
-        alert("Не удалось воспроизвести трек: " + (data.error || "Неизвестная ошибка"));
+        console.error("Error playing track:", data.error);
+        alert("Failed to play track: " + (data.error || "Unknown error"));
       }
     }.bind(this))
     .catch(function(error) {
-      console.error("Ошибка при запросе воспроизведения:", error);
+      console.error("Error requesting playback:", error);
       
-      // Возвращаем кнопку в исходное состояние
+      // Return button to original state
       this.innerHTML = '▶';
       this.disabled = false;
       
-      alert("Ошибка при воспроизведении трека");
+      alert("Error playing track");
     }.bind(this));
   }
   
-  // Обработчик кнопки лайка
+  // Like button handler
   document.getElementById('modal-like-btn').onclick = function() {
     var trackId = modal.getAttribute('data-track-id');
-    console.log("Изменение статуса лайка для трека:", trackId);
+    console.log("Changing like status for track:", trackId);
     
-    // Проверяем, что ID трека существует
+    // Check that track ID exists
     if (!trackId) {
-      console.warn("ID трека не указан, невозможно изменить статус лайка");
+      console.warn("Track ID not specified, cannot change like status");
       return;
     }
     
     var isLiked = this.classList.contains('active');
-    console.log("Текущий статус лайка:", isLiked);
+    console.log("Current like status:", isLiked);
     
-    // URL эндпоинта в зависимости от текущего статуса
+    // URL endpoint depending on current status
     var url = isLiked ? '/spotify/remove-saved-track' : '/spotify/save-track';
     var method = isLiked ? 'DELETE' : 'POST';
     
@@ -652,63 +551,63 @@
     })
     .then(function(response) { 
       if (!response.ok) {
-        throw new Error('Ошибка сервера: ' + response.status);
+        throw new Error('Server error: ' + response.status);
       }
       return response.json(); 
     })
     .then(function(data) {
-      console.log("Ответ сервера:", data);
+      console.log("Server response:", data);
       if (data.success) {
-        // Обновляем статус кнопки
+        // Update button status
         if (isLiked) {
           this.classList.remove('active');
-          // Заменяем на SVG пустое сердце
+          // Replace with SVG empty heart
           this.innerHTML = `<svg id="icon-like-outline" height="16" width="16" viewBox="0 0 16 16" fill="currentColor">
             <path d="M13.764 2.727a4.057 4.057 0 00-5.488-.253.558.558 0 01-.31.112.531.531 0 01-.311-.112 4.054 4.054 0 00-5.487.253A4.05 4.05 0 00.974 5.61c0 1.089.424 2.113 1.168 2.855l4.462 5.223a1.791 1.791 0 002.726 0l4.435-5.195A4.052 4.052 0 0014.96 5.61a4.057 4.057 0 00-1.196-2.883zm-.722 5.098L8.58 13.048c-.307.36-.921.36-1.228 0L2.864 7.797a3.072 3.072 0 01-.905-2.187c0-.826.321-1.603.905-2.187a3.091 3.091 0 012.191-.913 3.05 3.05 0 011.957.709c.041.036.408.351.954.351.531 0 .906-.31.94-.34a3.075 3.075 0 014.161.192 3.1 3.1 0 01-.025 4.403z"></path>
           </svg>`;
         } else {
           this.classList.add('active');
-          // Заменяем на SVG заполненное сердце
+          // Replace with SVG filled heart
           this.innerHTML = `<svg id="icon-like-filled" height="16" width="16" viewBox="0 0 16 16" fill="#1ed760">
             <path d="M13.764 2.727a4.057 4.057 0 00-5.488-.253.558.558 0 01-.31.112.531.531 0 01-.311-.112 4.054 4.054 0 00-5.487.253A4.05 4.05 0 00.974 5.61c0 1.089.424 2.113 1.168 2.855l4.462 5.223a1.791 1.791 0 002.726 0l4.435-5.195A4.052 4.052 0 0014.96 5.61a4.057 4.057 0 00-1.196-2.883z"></path>
           </svg>`;
         }
       } else {
-        console.error("Ошибка при изменении статуса лайка:", data.error);
+        console.error("Error changing like status:", data.error);
       }
     }.bind(this))
     .catch(function(error) {
-      console.error("Ошибка при изменении статуса лайка:", error);
+      console.error("Error changing like status:", error);
     });
   }
   
-  // Обработчик кнопки добавления в плейлист
+  // Add to playlist button handler
   document.getElementById('modal-playlist-btn').onclick = function() {
     var trackUri = modal.getAttribute('data-track-uri');
-    console.log("Добавление трека в плейлист:", trackUri);
-    // Ваш код для добавления в плейлист
+    console.log("Adding track to playlist:", trackUri);
+    // Your code for adding to playlist
   }
   
-  // Обработчик кнопки похожих треков
-  // Обработчик кнопки "Похожие треки"
+  // Similar tracks button handler
+  // Similar tracks button handler
   document.getElementById('modal-similar-btn').onclick = function() {
     var trackId = modal.getAttribute('data-track-id');
-    console.log("Поиск похожих треков:", trackId);
+    console.log("Finding similar tracks:", trackId);
     
     if (!trackId) {
-      console.error("ID трека не указан, невозможно найти похожие треки");
-      alert("Не удалось определить ID трека");
+      console.error("Track ID not specified, cannot find similar tracks");
+      alert("Could not determine track ID");
       return;
     }
     
-    // Показываем индикатор загрузки в кнопке
+    // Show loading indicator in the button
     this.innerHTML = '<span class="spinner-small"></span>';
     this.disabled = true;
     
-    // Закрываем модальное окно
+    // Close modal window
     modal.style.display = 'none';
     
-    // Показываем загрузчик рекомендаций
+    // Show recommendations loader
     var recommendationsContainer = document.getElementById('recommendations-container');
     recommendationsContainer.innerHTML = `
       <div class="loading-spinner">
@@ -716,88 +615,88 @@
       </div>
     `;
     
-    // Скроллим к разделу рекомендаций
+    // Scroll to recommendations section
     recommendationsContainer.scrollIntoView({ behavior: 'smooth' });
     
-    // Отправляем запрос на получение похожих треков
+    // Send request to get similar tracks
     fetch('/spotify/get-similar-tracks?track_id=' + trackId)
       .then(function(response) {
         if (!response.ok) {
-          throw new Error('Ошибка сервера: ' + response.status);
+          throw new Error('Server error: ' + response.status);
         }
         return response.json();
       })
       .then(function(data) {
-        console.log("Получены рекомендации:", data.tracks ? data.tracks.length : 0);
+        console.log("Received recommendations:", data.tracks ? data.tracks.length : 0);
         
-        // Возвращаем кнопку в исходное состояние (хотя модальное окно уже закрыто)
+        // Return button to original state (although modal is already closed)
         this.innerHTML = 'Similar';
         this.disabled = false;
         
         if (data.success && data.tracks && data.tracks.length > 0) {
-          // Отображаем рекомендации
+          // Display recommendations
           displayRecommendations(data.tracks);
           saveTracksToSession(data.tracks);
-          // Показываем кнопки действий
+          // Show action buttons
           document.getElementById('action-buttons').style.display = 'block';
         } else {
           recommendationsContainer.innerHTML = `
             <div class="alert alert-warning">
-              Не удалось получить похожие треки: ${data.error || 'Нет данных'}
+              Failed to get similar tracks: ${data.error || 'No data'}
             </div>
           `;
         }
       }.bind(this))
       .catch(function(error) {
-        console.error("Ошибка при запросе похожих треков:", error);
+        console.error("Error requesting similar tracks:", error);
         
-        // Возвращаем кнопку в исходное состояние
+        // Return button to original state
         this.innerHTML = 'Similar';
         this.disabled = false;
         
-        // Показываем сообщение об ошибке
+        // Show error message
         recommendationsContainer.innerHTML = `
           <div class="alert alert-danger">
-            Ошибка при получении похожих треков: ${error.message}
+            Error getting similar tracks: ${error.message}
           </div>
         `;
       }.bind(this));
   }
   
-  console.log("Модальное окно для треков инициализировано!");
+  console.log("Track modal initialized!");
 })();
 
-// Обработчик для кнопки добавления в очередь с предотвращением перехода
+// Handler for add to queue button with prevention of navigation
 document.addEventListener('DOMContentLoaded', function() {
-    // Находим кнопку добавления в очередь
+    // Find add to queue button
     const addToQueueButton = document.getElementById('add-to-queue-btn');
     
     if (addToQueueButton) {
-        // Если это ссылка, предотвращаем поведение по умолчанию
+        // If it's a link, prevent default behavior
         if (addToQueueButton.tagName.toLowerCase() === 'a') {
             addToQueueButton.setAttribute('href', 'javascript:void(0);');
         }
         
-        // Удаляем все существующие обработчики
+        // Remove all existing handlers
         const newButton = addToQueueButton.cloneNode(true);
         addToQueueButton.parentNode.replaceChild(newButton, addToQueueButton);
         
-        // Добавляем новый обработчик
+        // Add new handler
         newButton.addEventListener('click', function(event) {
-            // Предотвращаем стандартное поведение
+            // Prevent standard behavior
             event.preventDefault();
             event.stopPropagation();
             
-            console.log('Добавление рекомендаций в очередь...');
+            console.log('Adding recommendations to queue...');
             
-            // Сохраняем оригинальный контент кнопки
+            // Save original button content
             const originalContent = this.innerHTML;
             
-            // Показываем спиннер в кнопке
-            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Добавление...';
+            // Show spinner in button
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
             this.disabled = true;
             
-            // Делаем запрос на добавление треков в очередь
+            // Make request to add tracks to queue
             fetch('/spotify/add-recommendations-to-queue', {
                 method: 'POST',
                 headers: {
@@ -807,35 +706,35 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showNotification('Треки добавлены в очередь воспроизведения');
+                    showNotification('Tracks added to playback queue');
                 } else {
-                    showNotification(data.error || 'Ошибка при добавлении треков в очередь', true);
+                    showNotification(data.error || 'Error adding tracks to queue', true);
                 }
             })
             .catch(error => {
-                console.error('Ошибка запроса:', error);
-                showNotification('Не удалось добавить треки в очередь', true);
+                console.error('Request error:', error);
+                showNotification('Failed to add tracks to queue', true);
             })
             .finally(() => {
-                // Восстанавливаем кнопку
+                // Restore button
                 this.innerHTML = originalContent;
                 this.disabled = false;
             });
             
-            // Возвращаем false для дополнительной защиты от перехода
+            // Return false for additional protection against navigation
             return false;
         });
     }
 });
 
-// Добавляем функцию showNotification, если её нет
+// Add showNotification function if it doesn't exist
 function showNotification(message, isError = false) {
-    console.log(`Уведомление: ${message}, isError: ${isError}`);
+    console.log(`Notification: ${message}, isError: ${isError}`);
     
-    // Проверяем, существует ли уже контейнер для уведомлений
+    // Check if notification container already exists
     let notificationContainer = document.getElementById('notification-container');
     
-    // Если контейнера нет, создаем его
+    // If container doesn't exist, create it
     if (!notificationContainer) {
         notificationContainer = document.createElement('div');
         notificationContainer.id = 'notification-container';
@@ -843,7 +742,7 @@ function showNotification(message, isError = false) {
         document.body.appendChild(notificationContainer);
     }
     
-    // Создаем элемент уведомления
+    // Create notification element
     const notification = document.createElement('div');
     notification.className = isError ? 'notification error' : 'notification success';
     notification.style.cssText = `
@@ -859,10 +758,10 @@ function showNotification(message, isError = false) {
     
     notification.innerHTML = message;
     
-    // Добавляем уведомление в контейнер
+    // Add notification to container
     notificationContainer.appendChild(notification);
     
-    // Удаляем уведомление через 5 секунд
+    // Remove notification after 5 seconds
     setTimeout(() => {
         notification.style.opacity = '0';
         notification.style.transform = 'translateY(-20px)';
@@ -879,50 +778,50 @@ function showNotification(message, isError = false) {
 // ... existing code ...
 </script>
 
-<!-- JavaScript для асинхронной загрузки рекомендаций -->
+<!-- JavaScript for asynchronous loading of recommendations -->
 <script>
-    // Глобальные переменные для кэширования
+    // Global variables for caching
     let currentTrackData = null;
     let lastImageUrl = null;
     let lastImageLoadTime = 0;
     let isTrackLiked = false;
     let currentTrackId = null;
     
-    // Переменные для управления громкостью
+    // Variables for volume control
     let userSetVolume = null;
     let volumeUpdateTime = 0;
     const VOLUME_LOCK_DURATION = 5000;
     
-    // Переменные для локального управления прогрессом трека
+    // Variables for local track progress control
     let progressInterval = null;
     let lastProgressUpdateTime = 0;
     let currentProgressMs = 0;
     let trackDurationMs = 0;
     let isPlaying = false;
-    const PROGRESS_UPDATE_INTERVAL = 100;  // Обновляем UI каждые 100мс
-    const SERVER_SYNC_INTERVAL = 3000;     // Синхронизируемся с сервером каждые 3 секунды
+    const PROGRESS_UPDATE_INTERVAL = 100;  // Update UI every 100ms
+    const SERVER_SYNC_INTERVAL = 3000;     // Sync with server every 3 seconds
     let lastServerSyncTime = 0;
     
-    // Загружаем рекомендации и плеер после загрузки страницы
+    // Load recommendations and player after page load
     window.addEventListener('load', function() {
-        // Если на странице есть блок рекомендаций
+        // If there's a recommendations block on the page
         if (document.getElementById('recommendations-container')) {
             fetchRecommendations();
             toggleActionButtons(true);
         }
         
-        // Запускаем плеер, если пользователь авторизован
+        // Start player if user is authorized
         if (!document.querySelector('[data-show-login-button="true"]')) {
             initPlayer();
         }
     });
     
-    // Инициализация плеера
+    // Player initialization
     function initPlayer() {
-        // Инициализируем обновление информации о треке при загрузке
+        // Initialize track info update on load
         fetchNowPlaying();
         
-        // Запускаем интервал для синхронизации с сервером
+        // Start interval for server synchronization
         setInterval(() => {
             const now = Date.now();
             if (now - lastServerSyncTime >= SERVER_SYNC_INTERVAL) {
@@ -931,199 +830,199 @@ function showNotification(message, isError = false) {
             }
         }, SERVER_SYNC_INTERVAL);
         
-        // Настраиваем обработчики событий для элементов управления
+        // Set up event handlers for controls
         setupPlaybackControls();
     }
     
-    // Настройка элементов управления воспроизведением
+    // Setup playback controls
     function setupPlaybackControls() {
-        // Кнопка воспроизведения/паузы
+        // Play/pause button
         document.getElementById('btn-play-pause').addEventListener('click', function() {
             togglePlayback();
-            // Обновляем информацию после нажатия кнопки
+            // Update info after button press
             setTimeout(fetchNowPlaying, 500);
         });
         
-        // Кнопка следующего трека
+        // Next track button
         document.getElementById('btn-next').addEventListener('click', function() {
             skipToNext();
-            // Обновляем информацию после перехода к следующему треку
+            // Update info after going to next track
             setTimeout(fetchNowPlaying, 500);
         });
         
-        // Кнопка предыдущего трека
+        // Previous track button
         document.getElementById('btn-prev').addEventListener('click', function() {
             skipToPrevious();
-            // Обновляем информацию после перехода к предыдущему треку
+            // Update info after going to previous track
             setTimeout(fetchNowPlaying, 500);
         });
         
-        // Кнопка перемешивания
+        // Shuffle button
         document.getElementById('btn-shuffle').addEventListener('click', function() {
             toggleShuffle();
-            // Обновляем информацию
+            // Update info
             setTimeout(fetchNowPlaying, 500);
         });
         
-        // Кнопка повтора
+        // Repeat button
         document.getElementById('btn-repeat').addEventListener('click', function() {
             toggleRepeat();
-            // Обновляем информацию
+            // Update info
             setTimeout(fetchNowPlaying, 500);
         });
         
-        // Обработчик для кнопки "нравится"
+        // Like button handler
         document.getElementById('btn-like').addEventListener('click', function() {
             toggleLikeTrack();
-            // Обновляем информацию после изменения статуса лайка
+            // Update info after changing like status
             setTimeout(fetchNowPlaying, 500);
         });
         
-        // Обработчик для кнопки "добавить в плейлист"
+        // Add to playlist button handler
         document.getElementById('btn-add-to-playlist').addEventListener('click', function() {
-            // Получаем ID текущего трека из атрибута данных
+            // Get current track ID from data attribute
             const nowPlayingBar = document.getElementById('now-playing-bar');
             const trackId = nowPlayingBar.getAttribute('data-current-track-id');
             const trackName = nowPlayingBar.getAttribute('data-current-track-name');
             
             if (!trackId) {
-                console.error('Не удалось получить ID текущего трека');
-                showNotification('Не удалось определить текущий трек', true);
+                console.error('Failed to get current track ID');
+                showNotification('Failed to determine current track', true);
                 return;
             }
             
-            console.log('Открываем выбор плейлиста для трека:', trackId, trackName);
+            console.log('Opening playlist selection for track:', trackId, trackName);
             
-            // Сохраняем ID трека для использования при добавлении в плейлист
+            // Save track ID for use when adding to playlist
             document.getElementById('playlist-selector').setAttribute('data-track-id', trackId);
             
             trackUri = 'spotify:track:' + trackId;
-            // Открываем модальное окно выбора плейлиста
+            // Open playlist selector modal
             showPlaylistSelector(trackUri);
         });
         
-        // Прогресс-бар трека (кликабельный)
+        // Track progress bar (clickable)
         const progressBarContainer = document.querySelector('.progress-bar-container');
         progressBarContainer.addEventListener('click', function(e) {
-            // Получаем позицию клика относительно прогресс-бара
+            // Get click position relative to progress bar
             const rect = this.getBoundingClientRect();
             const position = (e.clientX - rect.left) / rect.width;
             
-            // Если есть данные о треке
+            // If track data exists
             if (currentTrackData && currentTrackData.item) {
                 const positionMs = Math.floor(position * currentTrackData.item.duration_ms);
                 seekPosition(positionMs);
-                // Обновляем информацию после изменения позиции
+                // Update info after changing position
                 setTimeout(fetchNowPlaying, 500);
             }
         });
         
-        // Прогресс-бар громкости
+        // Volume progress bar
         const volumeBarContainer = document.querySelector('.volume-bar-container');
         volumeBarContainer.addEventListener('click', function(e) {
-            // Получаем позицию клика
+            // Get click position
             const rect = this.getBoundingClientRect();
             const position = (e.clientX - rect.left) / rect.width;
             
-            // Устанавливаем громкость (0-100)
+            // Set volume (0-100)
             const volumePercent = Math.floor(position * 100);
             
-            // Сохраняем пользовательское значение и время изменения
+            // Save user value and update time
             userSetVolume = volumePercent;
             volumeUpdateTime = Date.now();
             
-            // Немедленно обновляем UI
+            // Immediately update UI
             document.getElementById('volume-level').style.width = volumePercent + '%';
             
-            // Отправляем на сервер
+            // Send to server
             setVolume(volumePercent);
-            // Обновляем информацию после изменения громкости
+            // Update info after changing volume
             setTimeout(fetchNowPlaying, 500);
         });
     }
     
-    // Обновление данных о текущем треке и синхронизация локального счетчика
+    // Update current track data and sync local counter
     function fetchNowPlaying() {
         
         fetch('/spotify/now-playing')
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.item) {
-                    console.log('Получены данные о треке:', data.item.name);
+                    console.log('Received track data:', data.item.name);
                     
-                    // Сохраняем данные для использования в других функциях
+                    // Save data for use in other functions
                     currentTrackData = data;
                     
-                    // Показываем плеер
+                    // Show player
                     document.getElementById('now-playing-bar').style.display = 'block';
                     
-                    // Сохраняем состояние воспроизведения
+                    // Save playback state
                     isPlaying = data.is_playing;
                     
-                    // Синхронизируем локальный счетчик с сервером
+                    // Sync local counter with server
                     currentProgressMs = data.progress_ms;
                     trackDurationMs = data.item.duration_ms;
                     lastProgressUpdateTime = Date.now();
                     
-                    // Управляем локальным таймером
+                    // Manage local timer
                     if (isPlaying) {
                         startProgressTimer();
                     } else {
                         stopProgressTimer();
                     }
                     
-                    // Обновляем интерфейс плеера
+                    // Update player interface
                     updatePlayerUI(data);
                     
-                    // Проверяем, изменился ли ID трека
+                    // Check if track ID changed
                     const newTrackId = data.item.id;
                     if (newTrackId !== currentTrackId) {
-                        console.log('Смена трека:', currentTrackId, '->', newTrackId);
+                        console.log('Track change:', currentTrackId, '->', newTrackId);
                         
-                        // ID трека изменился - это новый трек
+                        // Track ID changed - this is a new track
                         currentTrackId = newTrackId;
                         
-                        // Проверяем, добавлен ли трек в библиотеку при смене трека
+                        // Check if track is in library when track changes
                         checkIfTrackIsLiked(newTrackId);
                     }
                 } else {
-                    console.log('Нет активного трека или ошибка получения данных');
+                    console.log('No active track or error getting data');
                     
-                    // Останавливаем счетчик
+                    // Stop counter
                     stopProgressTimer();
                     
-                    // Сбрасываем ID текущего трека при остановке воспроизведения
+                    // Reset current track ID when playback stops
                     currentTrackId = null;
                     
-                    // Скрываем плеер, если нет активного трека
+                    // Hide player if no active track
                     document.getElementById('now-playing-bar').style.display = 'none';
                 }
             })
             .catch(error => {
-                console.error('Ошибка получения данных о текущем треке:', error);
+                console.error('Error getting current track data:', error);
             });
     }
     
-    // Запуск локального таймера прогресса
+    // Start local progress timer
     function startProgressTimer() {
-        // Останавливаем предыдущий таймер если он был
+        // Stop previous timer if it exists
         stopProgressTimer();
         
-        // Запускаем новый таймер
+        // Start new timer
         progressInterval = setInterval(() => {
-            // Рассчитываем прошедшее время с момента последнего обновления
+            // Calculate elapsed time since last update
             const now = Date.now();
             const elapsed = now - lastProgressUpdateTime;
             lastProgressUpdateTime = now;
             
-            // Увеличиваем текущий прогресс
+            // Increase current progress
             if (isPlaying) {
                 currentProgressMs += elapsed;
                 
-                // Обновляем прогресс-бар
+                // Update progress bar
                 updateProgressUI(currentProgressMs, trackDurationMs);
                 
-                // Если трек закончился, запрашиваем обновление с сервера
+                // If track ended, request update from server
                 if (currentProgressMs >= trackDurationMs) {
                     fetchNowPlaying();
                 }
@@ -1131,7 +1030,7 @@ function showNotification(message, isError = false) {
         }, PROGRESS_UPDATE_INTERVAL);
     }
     
-    // Остановка локального таймера прогресса
+    // Stop local progress timer
     function stopProgressTimer() {
         if (progressInterval) {
             clearInterval(progressInterval);
@@ -1139,13 +1038,13 @@ function showNotification(message, isError = false) {
         }
     }
     
-    // Обновление UI прогресс-бара
+    // Update progress bar UI
     function updateProgressUI(progressMs, durationMs) {
-        // Обновляем ширину прогресс-бара
+        // Update progress bar width
         const progressPercent = Math.min((progressMs / durationMs) * 100, 100);
         document.getElementById('now-playing-progress').style.width = progressPercent + '%';
         
-        // Обновляем текстовое отображение времени
+        // Update time text display
         const currentTimeFormatted = formatTime(progressMs);
         const durationFormatted = formatTime(durationMs);
         
@@ -1153,7 +1052,7 @@ function showNotification(message, isError = false) {
         document.getElementById('now-playing-duration').textContent = durationFormatted;
     }
     
-    // Форматирование времени в MM:SS
+    // Format time as MM:SS
     function formatTime(ms) {
         const totalSeconds = Math.floor(ms / 1000);
         const minutes = Math.floor(totalSeconds / 60);
@@ -1161,10 +1060,10 @@ function showNotification(message, isError = false) {
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
     
-    // Обновление интерфейса плеера на основе полученных данных
+    // Update player interface based on received data
     function updatePlayerUI(data) {
         
-        // Сохраняем ID и URI текущего трека в атрибуты данных плеера
+        // Save current track ID and URI in player data attributes
         const nowPlayingBar = document.getElementById('now-playing-bar');
         if (nowPlayingBar) {
             nowPlayingBar.setAttribute('data-current-track-id', data.item.id);
@@ -1172,78 +1071,78 @@ function showNotification(message, isError = false) {
             nowPlayingBar.setAttribute('data-current-track-name', data.item.name);
         }
         
-        // Обновляем название трека
+        // Update track name
         const trackElement = document.getElementById('now-playing-track');
         trackElement.textContent = data.item.name;
         trackElement.href = data.item.external_urls.spotify;
         
-        // Обновляем ссылки артистов с классом как в топ треках
+        // Update artist links with class as in top tracks
         const artistsContainer = document.getElementById('now-playing-artists');
         artistsContainer.innerHTML = '';
         
-        // Добавляем новые ссылки артистов с классом "artist-name"
+        // Add new artist links with "artist-name" class
         data.item.artists.forEach((artist, index) => {
             const artistLink = document.createElement('a');
             artistLink.href = artist.external_urls.spotify;
-            artistLink.className = 'artist-name'; // Используем тот же класс как в топ треках
-            artistLink.style.display = 'inline'; // Принудительно отображаем в строку
+            artistLink.className = 'artist-name'; // Use same class as in top tracks
+            artistLink.style.display = 'inline'; // Force display inline
             artistLink.target = '_blank';
             artistLink.textContent = artist.name;
             
             artistsContainer.appendChild(artistLink);
             
-            // Добавляем запятую между артистами (кроме последнего)
+            // Add comma between artists (except last)
             if (index < data.item.artists.length - 1) {
                 const comma = document.createTextNode(', ');
                 artistsContainer.appendChild(comma);
             }
         });
         
-        // Обновляем обложку альбома
+        // Update album cover
         const albumImageUrl = data.item.album.images[0].url;
         const imageElement = document.getElementById('now-playing-image');
         
-        // Проверяем, изменилась ли обложка альбома
+        // Check if album cover changed
         if (albumImageUrl !== lastImageUrl) {
             imageElement.src = albumImageUrl;
             lastImageUrl = albumImageUrl;
             lastImageLoadTime = Date.now();
         }
         
-        // Показываем/скрываем маркер Explicit
+        // Show/hide Explicit marker
         const explicitBadge = document.getElementById('now-playing-explicit');
         explicitBadge.style.display = data.item.explicit ? 'inline-flex' : 'none';
         
-        // Обновляем состояние кнопки воспроизведения/паузы
+        // Update play/pause button state
         updatePlayPauseButton(data.is_playing);
         
-        // Обновляем состояние повтора и перемешивания
+        // Update repeat and shuffle state
         updatePlaybackMode(data.repeat_state, data.shuffle_state);
         
-        // Обновляем громкость только если пользователь не менял её недавно
+        // Update volume only if user hasn't changed it recently
         const currentTime = Date.now();
         if (data.device && data.device.volume_percent) {
-            // Если пользователь недавно менял громкость, используем его значение
+            // If user recently changed volume, use their value
             if (userSetVolume !== null && currentTime - volumeUpdateTime < VOLUME_LOCK_DURATION) {
                 document.getElementById('volume-level').style.width = userSetVolume + '%';
             } else {
-                // Если прошло достаточно времени, обновляем из данных сервера
+                // If enough time passed, update from server data
                 document.getElementById('volume-level').style.width = data.device.volume_percent + '%';
-                // Сбрасываем пользовательское значение, так как оно устарело
+                // Reset user value as it's outdated
                 userSetVolume = null;
             }
         }
     }
     
-    // Функция переключения воспроизведения/паузы с обновлением локального счетчика
+    // Function to toggle play/pause with local counter update
     function togglePlayback() {
-        console.log('Переключение воспроизведения/паузы');
+        console.log('Toggling play/pause');
         
-        // Оптимистично меняем состояние UI и локального счетчика
+        // Optimistically change UI state and local counter
         isPlaying = !isPlaying;
         updatePlayPauseButton(isPlaying);
         
-        // Управляем локальным таймером
+        // Manage local timer
         if (isPlaying) {
             lastProgressUpdateTime = Date.now();
             startProgressTimer();
@@ -1258,12 +1157,12 @@ function showNotification(message, isError = false) {
         .then(response => response.json())
         .then(data => {
             if (!data.success) {
-                console.error('Ошибка переключения воспроизведения:', data.error);
-                // Восстанавливаем правильное состояние, если запрос не удался
+                console.error('Error toggling playback:', data.error);
+                // Restore correct state if request failed
                 isPlaying = !isPlaying;
                 updatePlayPauseButton(isPlaying);
                 
-                // Управляем локальным таймером после восстановления
+                // Manage local timer after restoration
                 if (isPlaying) {
                     lastProgressUpdateTime = Date.now();
                     startProgressTimer();
@@ -1271,17 +1170,17 @@ function showNotification(message, isError = false) {
                     stopProgressTimer();
                 }
                 
-                // Синхронизируемся с сервером
+                // Sync with server
                 setTimeout(fetchNowPlaying, 500);
             }
         })
         .catch(error => {
-            console.error('Ошибка запроса:', error);
-            // Восстанавливаем правильное состояние
+            console.error('Request error:', error);
+            // Restore correct state
             isPlaying = !isPlaying;
             updatePlayPauseButton(isPlaying);
             
-            // Управляем локальным таймером после восстановления
+            // Manage local timer after restoration
             if (isPlaying) {
                 lastProgressUpdateTime = Date.now();
                 startProgressTimer();
@@ -1289,14 +1188,14 @@ function showNotification(message, isError = false) {
                 stopProgressTimer();
             }
             
-            // Синхронизируемся с сервером
+            // Sync with server
             setTimeout(fetchNowPlaying, 500);
         });
     }
     
-    // Переход к следующему треку
+    // Skip to next track
     function skipToNext() {
-        console.log('Переход к следующему треку');
+        console.log('Skipping to next track');
         
         fetch('/spotify/next-track', {
             method: 'POST',
@@ -1305,20 +1204,20 @@ function showNotification(message, isError = false) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('Успешно перешли к следующему треку');
+                console.log('Successfully skipped to next track');
                 setTimeout(fetchNowPlaying, 500);
             } else {
-                console.error('Ошибка перехода к следующему треку:', data.error);
+                console.error('Error skipping to next track:', data.error);
             }
         })
         .catch(error => {
-            console.error('Ошибка запроса:', error);
+            console.error('Request error:', error);
         });
     }
     
-    // Переход к предыдущему треку
+    // Skip to previous track
     function skipToPrevious() {
-        console.log('Переход к предыдущему треку');
+        console.log('Skipping to previous track');
         
         fetch('/spotify/previous-track', {
             method: 'POST',
@@ -1327,22 +1226,22 @@ function showNotification(message, isError = false) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('Успешно перешли к предыдущему треку');
+                console.log('Successfully skipped to previous track');
                 setTimeout(fetchNowPlaying, 500);
             } else {
-                console.error('Ошибка перехода к предыдущему треку:', data.error);
+                console.error('Error skipping to previous track:', data.error);
             }
         })
         .catch(error => {
-            console.error('Ошибка запроса:', error);
+            console.error('Request error:', error);
         });
     }
     
-    // Перемотка на указанную позицию с обновлением локального счетчика
+    // Seek to specified position with local counter update
     function seekPosition(positionMs) {
-        console.log('Перемотка к позиции:', positionMs);
+        console.log('Seeking to position:', positionMs);
         
-        // Оптимистично обновляем локальный счетчик
+        // Optimistically update local counter
         currentProgressMs = positionMs;
         lastProgressUpdateTime = Date.now();
         updateProgressUI(currentProgressMs, trackDurationMs);
@@ -1355,23 +1254,23 @@ function showNotification(message, isError = false) {
         .then(response => response.json())
         .then(data => {
             if (!data.success) {
-                console.error('Ошибка перемотки:', data.error);
-                // Синхронизируемся с сервером в случае ошибки
+                console.error('Error seeking:', data.error);
+                // Sync with server in case of error
                 setTimeout(fetchNowPlaying, 500);
             }
         })
         .catch(error => {
-            console.error('Ошибка запроса:', error);
-            // Синхронизируемся с сервером в случае ошибки
+            console.error('Request error:', error);
+            // Sync with server in case of error
             setTimeout(fetchNowPlaying, 500);
         });
     }
     
-    // Установка громкости с обновлением локальных переменных
+    // Set volume with local variable update
     function setVolume(volumePercent) {
-        console.log('Установка громкости:', volumePercent);
+        console.log('Setting volume:', volumePercent);
         
-        // Сохраняем значение и время
+        // Save value and time
         userSetVolume = volumePercent;
         volumeUpdateTime = Date.now();
         
@@ -1383,17 +1282,17 @@ function showNotification(message, isError = false) {
         .then(response => response.json())
         .then(data => {
             if (!data.success) {
-                console.error('Ошибка установки громкости:', data.error);
+                console.error('Error setting volume:', data.error);
             }
         })
         .catch(error => {
-            console.error('Ошибка запроса:', error);
+            console.error('Request error:', error);
         });
     }
     
-    // Переключение режима перемешивания
+    // Toggle shuffle mode
     function toggleShuffle() {
-        console.log('Переключение режима перемешивания');
+        console.log('Toggling shuffle mode');
         
         fetch('/spotify/toggle-shuffle', {
             method: 'POST',
@@ -1402,20 +1301,20 @@ function showNotification(message, isError = false) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('Успешно переключили режим перемешивания');
+                console.log('Successfully toggled shuffle mode');
                 setTimeout(fetchNowPlaying, 500);
             } else {
-                console.error('Ошибка переключения режима перемешивания:', data.error);
+                console.error('Error toggling shuffle mode:', data.error);
             }
         })
         .catch(error => {
-            console.error('Ошибка запроса:', error);
+            console.error('Request error:', error);
         });
     }
     
-    // Переключение режима повтора
+    // Toggle repeat mode
     function toggleRepeat() {
-        console.log('Переключение режима повтора');
+        console.log('Toggling repeat mode');
         
         fetch('/spotify/toggle-repeat', {
             method: 'POST',
@@ -1424,42 +1323,42 @@ function showNotification(message, isError = false) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('Успешно переключили режим повтора');
+                console.log('Successfully toggled repeat mode');
                 setTimeout(fetchNowPlaying, 500);
             } else {
-                console.error('Ошибка переключения режима повтора:', data.error);
+                console.error('Error toggling repeat mode:', data.error);
             }
         })
         .catch(error => {
-            console.error('Ошибка запроса:', error);
+            console.error('Request error:', error);
         });
     }
     
-    // Проверяем, добавлен ли трек в библиотеку
+    // Check if track is saved in library
     function checkIfTrackIsLiked(trackId) {
         if (!trackId) return;
         
-        console.log('Проверка статуса трека в библиотеке:', trackId);
+        console.log('Checking track status in library:', trackId);
         
         fetch(`/spotify/check-saved-track?track_id=${trackId}`)
             .then(response => response.json())
             .then(data => {
-                console.log('Ответ API о статусе трека:', data);
+                console.log('API response about track status:', data);
                 
                 if (data.success) {
                     isTrackLiked = data.is_saved;
                     updateLikeButton(isTrackLiked);
-                    console.log('Трек сохранен в библиотеке:', isTrackLiked);
+                    console.log('Track saved in library:', isTrackLiked);
                 } else {
-                    console.error('Ошибка проверки статуса трека:', data.error);
+                    console.error('Error checking track status:', data.error);
                 }
             })
             .catch(error => {
-                console.error('Ошибка запроса статуса трека:', error);
+                console.error('Error requesting track status:', error);
             });
     }
     
-    // Обновление кнопки "нравится" в зависимости от статуса
+    // Update like button based on status
     function updateLikeButton(isLiked) {
         const iconOutline = document.getElementById('icon-like-outline');
         const iconFilled = document.getElementById('icon-like-filled');
@@ -1473,18 +1372,18 @@ function showNotification(message, isError = false) {
         }
     }
     
-    // Отображение списка плейлистов пользователя
+    // Display user's playlist list
     function showPlaylistSelector() {
         const selector = document.getElementById('playlist-selector');
         const playlistList = selector.querySelector('.playlist-list');
         
-        // Очистка предыдущего списка
-        playlistList.innerHTML = 'Загрузка плейлистов...';
+        // Clear previous list
+        playlistList.innerHTML = 'Loading playlists...';
         
-        // Показать селектор
+        // Show selector
         selector.style.display = 'flex';
         
-        // Загрузить плейлисты пользователя
+        // Load user playlists
         fetch('/spotify/user-playlists')
             .then(response => response.json())
             .then(data => {
@@ -1516,34 +1415,34 @@ function showNotification(message, isError = false) {
                         playlistList.appendChild(item);
                     });
                 } else {
-                    playlistList.innerHTML = 'Не удалось загрузить плейлисты';
+                    playlistList.innerHTML = 'Failed to load playlists';
                 }
             })
             .catch(error => {
-                console.error('Ошибка загрузки плейлистов:', error);
-                playlistList.innerHTML = 'Ошибка загрузки плейлистов';
+                console.error('Error loading playlists:', error);
+                playlistList.innerHTML = 'Error loading playlists';
             });
     }
     
-    // Обновляем функцию добавления треков в плейлист с отладочной информацией
+    // Update function to add tracks to playlist with debug information
     function addTrackToPlaylist(playlistId) {
-      // Показываем индикатор загрузки
+      // Show loading indicator
       playlistsList.innerHTML = `<div class="playlist-loading"><div class="spinner"></div></div>`;
 
-      // Определяем режим (добавление одного трека или всех треков)
+      // Determine mode (add single track or all tracks)
       const mode = playlistModal.getAttribute('data-mode') || 'single_track';
       
-      console.log('Режим добавления треков:', mode);
-      console.log('ID плейлиста:', playlistId);
-      console.log('Текущий URI трека:', currentTrackUri);
+      console.log('Track addition mode:', mode);
+      console.log('Playlist ID:', playlistId);
+      console.log('Current track URI:', currentTrackUri);
       
       if (mode === 'all_tracks') {
-        // Добавляем все треки из сессии
+        // Add all tracks from session
         const requestData = {
           playlist_id: playlistId
         };
         
-        console.log('Отправляемые данные для всех треков:', JSON.stringify(requestData));
+        console.log('Data being sent for all tracks:', JSON.stringify(requestData));
         
         fetch('/spotify/add-all-tracks-to-playlist', {
           method: 'POST',
@@ -1553,32 +1452,32 @@ function showNotification(message, isError = false) {
           body: JSON.stringify(requestData)
         })
         .then(response => {
-          console.log('Статус ответа:', response.status);
+          console.log('Response status:', response.status);
           return response.json();
         })
         .then(data => {
-          console.log('Ответ сервера:', data);
+          console.log('Server response:', data);
           
           if (data.success) {
-            // Успешное добавление
+            // Successful addition
             playlistModal.style.display = 'none';
-            showNotification(`Успешно добавлено ${data.added_count || 'несколько'} треков в плейлист`);
+            showNotification(`Successfully added ${data.added_count || 'several'} tracks to playlist`);
           } else {
-            // Ошибка
-            showNotification('Ошибка: ' + (data.error || 'Неизвестная ошибка при добавлении треков'), true);
-            loadPlaylists(); // Перезагружаем плейлисты
+            // Error
+            showNotification('Error: ' + (data.error || 'Unknown error adding tracks'), true);
+            loadPlaylists(); // Reload playlists
           }
         })
         .catch(error => {
-          console.error('Ошибка при добавлении треков в плейлист:', error);
-          showNotification('Ошибка при обработке запроса: ' + error.message, true);
-          loadPlaylists(); // Перезагружаем плейлисты
+          console.error('Error adding tracks to playlist:', error);
+          showNotification('Error processing request: ' + error.message, true);
+          loadPlaylists(); // Reload playlists
         });
       } else {
-        // Добавляем один трек
+        // Add single track
         if (!currentTrackUri) {
-          console.error('Не выбран трек для добавления');
-          showNotification('Не выбран трек для добавления', true);
+          console.error('No track selected to add');
+          showNotification('No track selected to add', true);
           return;
         }
         
@@ -1587,7 +1486,7 @@ function showNotification(message, isError = false) {
           track_uri: currentTrackUri
         };
         
-        console.log('Отправляемые данные для одного трека:', JSON.stringify(requestData));
+        console.log('Data being sent for single track:', JSON.stringify(requestData));
         
         fetch('/spotify/add-track-to-playlist', {
           method: 'POST',
@@ -1597,32 +1496,32 @@ function showNotification(message, isError = false) {
           body: JSON.stringify(requestData)
         })
         .then(response => {
-          console.log('Статус ответа:', response.status);
+          console.log('Response status:', response.status);
           return response.json();
         })
         .then(data => {
-          console.log('Ответ сервера:', data);
+          console.log('Server response:', data);
           
           if (data.success) {
-            // Успешное добавление
+            // Successful addition
             playlistModal.style.display = 'none';
-            showNotification('Трек успешно добавлен в плейлист');
+            showNotification('Track successfully added to playlist');
           } else {
-            // Ошибка
-            showNotification('Ошибка: ' + (data.error || 'Неизвестная ошибка при добавлении трека'), true);
-            loadPlaylists(); // Перезагружаем плейлисты
+            // Error
+            showNotification('Error: ' + (data.error || 'Unknown error adding track'), true);
+            loadPlaylists(); // Reload playlists
           }
         })
         .catch(error => {
-          console.error('Ошибка при добавлении трека в плейлист:', error);
-          showNotification('Ошибка при обработке запроса: ' + error.message, true);
-          loadPlaylists(); // Перезагружаем плейлисты
+          console.error('Error adding track to playlist:', error);
+          showNotification('Error processing request: ' + error.message, true);
+          loadPlaylists(); // Reload playlists
         });
       }
     }
     
 
-    // Обновление состояния кнопки воспроизведения/паузы
+    // Update play/pause button state
     function  updatePlayPauseButton(isPlaying) {
         const iconPlay = document.getElementById('icon-play');
         const iconPause = document.getElementById('icon-pause');
@@ -1636,25 +1535,25 @@ function showNotification(message, isError = false) {
         }
     }
     
-    // Обновление режимов повтора и перемешивания
+    // Update repeat and shuffle modes
     function updatePlaybackMode(repeatState, shuffleState) {
-        // Обновляем состояние кнопки повтора
+        // Update repeat button state
         const repeatButton = document.getElementById('btn-repeat');
         const repeatOneIndicator = document.getElementById('repeat-one-indicator');
         
-        // Сбрасываем классы
+        // Reset classes
         repeatButton.classList.remove('active', 'active-track');
         
-        // Устанавливаем правильные классы в зависимости от режима
+        // Set correct classes based on mode
         if (repeatState === 'track') {
-            // Режим повтора одного трека
+            // Single track repeat mode
             repeatButton.classList.add('active', 'active-track');
         } else if (repeatState === 'context') {
-            // Режим повтора альбома/плейлиста
+            // Album/playlist repeat mode
             repeatButton.classList.add('active');
         }
         
-        // Обновляем состояние кнопки перемешивания
+        // Update shuffle button state
         const shuffleButton = document.getElementById('btn-shuffle');
         if (shuffleState) {
             shuffleButton.classList.add('active');
@@ -1662,7 +1561,7 @@ function showNotification(message, isError = false) {
             shuffleButton.classList.remove('active');
         }
         
-        // Обновляем текстовые индикаторы (если они есть)
+        // Update text indicators (if they exist)
         const repeatValueElement = document.getElementById('repeat-value');
         if (repeatValueElement) {
             repeatValueElement.textContent = repeatState;
@@ -1674,24 +1573,24 @@ function showNotification(message, isError = false) {
         }
     }
 
-    // Функция переключения лайка трека (добавление/удаление из библиотеки)
+    // Function to toggle track like (add/remove from library)
     function toggleLikeTrack() {
         if (!currentTrackId) return;
         
-        console.log('Переключение статуса лайка для трека:', currentTrackId);
+        console.log('Toggling like status for track:', currentTrackId);
         
-        // Оптимистично обновляем UI
+        // Optimistically update UI
         const wasLiked = isTrackLiked;
         isTrackLiked = !isTrackLiked;
         updateLikeButton(isTrackLiked);
         
-        // Определяем эндпоинт в зависимости от текущего состояния
+        // Determine endpoint based on current state
         const url = wasLiked ? '/spotify/remove-saved-track' : '/spotify/save-track';
         const method = wasLiked ? 'DELETE' : 'POST';
         
-        console.log(`Отправка ${method} запроса на ${url} для трека ${currentTrackId}`);
+        console.log(`Sending ${method} request to ${url} for track ${currentTrackId}`);
         
-        // Отправляем запрос на бэкенд Flask
+        // Send request to Flask backend
         fetch(url, {
             method: method,
             headers: {
@@ -1701,31 +1600,31 @@ function showNotification(message, isError = false) {
         })
         .then(response => {
             if (!response.ok) {
-                console.error('Ошибка HTTP:', response.status, response.statusText);
-                throw new Error('Ошибка сервера: ' + response.status);
+                console.error('HTTP Error:', response.status, response.statusText);
+                throw new Error('Server error: ' + response.status);
             }
             return response.json();
         })
         .then(data => {
-            console.log('Ответ сервера:', data);
+            console.log('Server response:', data);
             if (!data.success) {
-                // Если ошибка, возвращаем прежнее состояние
+                // If error, revert to previous state
                 isTrackLiked = wasLiked;
                 updateLikeButton(isTrackLiked);
-                console.error('Ошибка при изменении статуса трека:', data.error);
+                console.error('Error changing track status:', data.error);
             } else {
-                console.log('Трек успешно ' + (wasLiked ? 'удален из' : 'добавлен в') + ' библиотеки');
-                // Обновляем статус трека
+                console.log('Track successfully ' + (wasLiked ? 'removed from' : 'added to') + ' library');
+                // Update track status
                 setTimeout(function() {
                     checkIfTrackIsLiked(currentTrackId);
                 }, 500);
             }
         })
         .catch(error => {
-            // При ошибке запроса возвращаем прежнее состояние
+            // On request error, revert to previous state
             isTrackLiked = wasLiked;
             updateLikeButton(isTrackLiked);
-            console.error('Ошибка запроса:', error);
+            console.error('Request error:', error);
         });
     }
 
@@ -1734,79 +1633,79 @@ function showNotification(message, isError = false) {
         if (!actionButtons) return;
         
         if (show) {
-            // Показываем кнопки
+            // Show buttons
             actionButtons.style.display = 'block';
             actionButtons.style.marginBottom = '150px';
-            console.log('Кнопки действий показаны');
+            console.log('Action buttons shown');
         } else {
-            // Скрываем кнопки
+            // Hide buttons
             actionButtons.style.display = 'none';
             actionButtons.style.marginBottom = '0px';
-            console.log('Кнопки действий скрыты');
+            console.log('Action buttons hidden');
         }
     }
 
-    // Функция получения рекомендаций
+    // Function to get recommendations
     function fetchRecommendations() {
-        console.log('Получение рекомендаций через бэкенд Flask...');
+        console.log('Getting recommendations through Flask backend...');
         
-        // Показываем состояние загрузки
+        // Show loading state
         const container = document.getElementById('recommendations-container');
         
-        // Отображаем индикатор загрузки
+        // Display loading indicator
         container.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
         
-        // Возвращаем Promise для корректной работы с then/catch
+        // Return Promise for correct then/catch handling
         return new Promise((resolve, reject) => {
-            // Делаем запрос к нашему Flask-эндпоинту
+            // Make request to our Flask endpoint
             fetch('/api/recommendations')
                 .then(response => {
-                    console.log('Статус ответа:', response.status);
+                    console.log('Response status:', response.status);
                     
-                    // Всегда читаем JSON из ответа, даже при ошибке
+                    // Always read JSON from response, even on error
                     return response.json().then(data => {
-                        // Добавляем статус в объект данных
+                        // Add status to data object
                         return { ...data, status: response.status };
                     });
                 })
                 .then(data => {
-                    console.log('Получены данные:', data);
+                    console.log('Data received:', data);
                     
-                    // Проверяем статус ответа
+                    // Check response status
                     if (data.status >= 400) {
-                        throw new Error(data.error || `Ошибка сервера: ${data.status}`);
+                        throw new Error(data.error || `Server error: ${data.status}`);
                     }
                     
-                    // Проверяем успешность выполнения
+                    // Check execution success
                     if (!data.success) {
-                        throw new Error(data.error || 'Неизвестная ошибка');
+                        throw new Error(data.error || 'Unknown error');
                     }
                     
-                    // Проверяем наличие треков
+                    // Check for tracks
                     if (!data.tracks || data.tracks.length === 0) {
                         container.innerHTML = 
-                            '<div class="notice-message">Для вас пока нет рекомендаций. Слушайте больше музыки!</div>';
-                        resolve(); // Завершаем Promise успешно
+                            '<div class="notice-message">No recommendations for you yet. Listen to more music!</div>';
+                        resolve(); // Complete Promise successfully
                         return;
                     }
                     
                     saveTracksToSession(data.tracks);
-                    // Отображаем рекомендации
+                    // Display recommendations
                     displayRecommendations(data.tracks);
-                    resolve(); // Завершаем Promise успешно
+                    resolve(); // Complete Promise successfully
                 })
                 .catch(error => {
-                    console.error('Ошибка запроса:', error);
+                    console.error('Request error:', error);
                     document.getElementById('recommendations-container').innerHTML = 
-                        `<div class="error-message">Не удалось загрузить рекомендации: ${error.message}</div>`;
-                    reject(error); // Завершаем Promise с ошибкой
+                        `<div class="error-message">Failed to load recommendations: ${error.message}</div>`;
+                    reject(error); // Complete Promise with error
                 });
         });
     }
 
-        // Функция для сохранения ID треков в сессию
+        // Function to save track IDs to session
     function saveTracksToSession(trackIds) {
-        console.log('Сохранение треков в сессию:', trackIds);
+        console.log('Saving tracks to session:', trackIds);
         
         fetch('/spotify/save-tracks-to-session', {
             method: 'POST',
@@ -1816,77 +1715,77 @@ function showNotification(message, isError = false) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                console.log('Треки успешно сохранены в сессию');
+                console.log('Tracks successfully saved to session');
             } else {
-                console.error('Ошибка сохранения треков в сессию:', data.error);
+                console.error('Error saving tracks to session:', data.error);
             }
         })
         .catch(error => {
-            console.error('Ошибка запроса при сохранении треков:', error);
+            console.error('Request error when saving tracks:', error);
         });
     }
     
-    // Функция отображения рекомендаций с гиперссылками
+    // Function to display recommendations with hyperlinks
     function displayRecommendations(tracks) {
-        console.log('Отображение рекомендаций:', tracks.length);
+        console.log('Displaying recommendations:', tracks.length);
         
-        // Получаем контейнер для рекомендаций
+        // Get recommendations container
         const recommendationsContainer = document.getElementById('recommendations-container');
         
-        // Очищаем контейнер
+        // Clear container
         recommendationsContainer.innerHTML = '';
         
-        // Создаем заголовок
+        // Create header
         const header = document.createElement('h2');
         header.className = 'recommendations-header';
         recommendationsContainer.appendChild(header);
         
-        // Создаем список треков
+        // Create track list
         const trackList = document.createElement('div');
         trackList.className = 'track-list';
         trackList.id = 'recommendations-list';
         
-        // Добавляем треки
+        // Add tracks
         tracks.forEach(track => {
-            // Создаем элемент трека
+            // Create track element
             const trackItem = document.createElement('div');
             trackItem.className = 'track-item';
             trackItem.setAttribute('data-uri', track.uri);
             trackItem.setAttribute('data-id', track.id);
             
-            // Создаем ссылку для обложки
+            // Create link for cover
             const coverLink = document.createElement('a');
             coverLink.href = track.uri;
             coverLink.target = '_blank';
             
-            // Добавляем обложку
+            // Add cover
             const coverImg = document.createElement('img');
             coverImg.src = track.album.images[0].url;
             coverImg.alt = track.name;
             coverImg.className = 'track-cover';
             coverLink.appendChild(coverImg);
             
-            // Создаем блок информации о треке
+            // Create track info block
             const trackInfo = document.createElement('div');
             trackInfo.className = 'track-info';
             
-            // Создаем ссылку на название трека
+            // Create link to track name
             const trackNameLink = document.createElement('a');
             trackNameLink.href = track.uri;
             trackNameLink.target = '_blank';
             trackNameLink.className = 'track-name';
             trackNameLink.textContent = track.name;
             
-            // Создаем ссылку на исполнителя
+            // Create link to artist
             const artistLink = document.createElement('a');
             if (track.artists && track.artists.length > 0) {
-                artistLink.href = 'spotify:artist:' + track.artists.map(artist => artist.name).join(', ');
+                artistLink.href = 'spotify:search:' + track.artists.map(artist => artist.name).join(', ');
                 artistLink.target = '_blank';
                 artistLink.className = 'artist-name';
                 artistLink.textContent = track.artists.map(artist => artist.name).join(', ');
             }
             
-            // Собираем элементы вместе
+            // Assemble elements together
             trackInfo.appendChild(trackNameLink);
             trackInfo.appendChild(artistLink);
             
@@ -1895,34 +1794,34 @@ function showNotification(message, isError = false) {
             trackList.appendChild(trackItem);
         });
         
-        // Добавляем список треков в контейнер
+        // Add track list to container
         recommendationsContainer.appendChild(trackList);
         
-        // Показываем кнопки действий
+        // Show action buttons
         document.getElementById('action-buttons').style.display = 'block';
     }
 
-    // Вспомогательная функция для получения ссылок на артистов
+    // Helper function to get artist links
     function getArtistLinks(track) {
-        // Проверяем, какой формат данных у нас есть
+        // Check what data format we have
         if (track.artists && Array.isArray(track.artists)) {
-            // Формат Spotify API
+            // Spotify API format
             return track.artists.map(artist => 
                 `<a href="${artist.external_urls?.spotify || '#'}" target="_blank" class="artist-name">${artist.name}</a>`
             ).join(', ');
         } else if (track.artistName) {
-            // Формат Skiley API
+            // Skiley API format
             return `<span class="artist-name">${track.artistName}</span>`;
         } else {
-            // Неизвестный формат
-            return '<span class="artist-name">Неизвестный исполнитель</span>';
+            // Unknown format
+            return '<span class="artist-name">Unknown artist</span>';
         }
     }
 
-    // Добавьте этот код в конец вашего JavaScript-блока или в функцию window.onload
+    // Add this code at the end of your JavaScript block or in window.onload function
     document.addEventListener('DOMContentLoaded', function() {
-        // Если у вас есть вкладки или кнопка для переключения на рекомендации,
-        // оставляем обработчик события
+        // If you have tabs or a button to switch to recommendations,
+        // keep the event handler
         const recommendationsTab = document.getElementById('recommendations-tab');
         if (recommendationsTab) {
             recommendationsTab.addEventListener('click', function() {
@@ -1931,9 +1830,9 @@ function showNotification(message, isError = false) {
         }
     });
 
-    // Добавляем обработчик клика на треки
+    // Add click handler for tracks
     function setupTrackInteractions() {
-        // Находим все элементы треков
+        // Find all track elements
         const trackItems = document.querySelectorAll('.track-item');
         
         trackItems.forEach(trackItem => {
@@ -1941,18 +1840,18 @@ function showNotification(message, isError = false) {
                 const trackId = this.dataset.id;
                 const trackUri = this.dataset.uri;
                 
-                // Получаем информацию о треке
+                // Get track information
                 const trackName = this.querySelector('.track-name').textContent;
                 const artistName = this.querySelector('.artist-name').textContent;
                 const coverUrl = this.querySelector('.track-cover').src;
                 
-                // Получаем ID артиста из атрибута данных или из href ссылки
+                // Get artist ID from data attribute or from href link
                 var artistId = null;
                 var artistLink = this.querySelector('.artist-name');
                 if (artistLink) {
                   var href = artistLink.getAttribute('href');
                   if (href) {
-                    // Извлекаем ID артиста из ссылки href="spotify:artist:ARTIST_ID"
+                    // Extract artist ID from link href="spotify:artist:ARTIST_ID"
                     var match = href.match(/spotify:artist:([a-zA-Z0-9]+)/);
                     if (match && match[1]) {
                       artistId = match[1];
@@ -1960,35 +1859,35 @@ function showNotification(message, isError = false) {
                   }
                 }
                 
-                // Показываем модальное окно
+                // Show modal window
                 showTrackModal(trackId, trackUri, trackName, artistName, coverUrl, artistId);
             });
         });
         
-        // Инициализируем обработчики для модального окна
+        // Initialize handlers for modal window
         initModalHandlers();
     }
 
-    // Обработчик для кнопки обновления рекомендаций
+    // Handler for recommendations refresh button
     document.addEventListener('DOMContentLoaded', function() {
         const refreshButton = document.getElementById('refresh-recommendations');
         if (refreshButton) {
             refreshButton.addEventListener('click', function() {
                 this.style.width = '110px';
-                // Отключаем кнопку на время загрузки
+                // Disable button during loading
                 this.disabled = true;
                 this.style.width = '110px';
 
-                // Вызываем функцию загрузки рекомендаций
+                // Call recommendations loading function
                 fetchRecommendations()
                     .then(() => {
-                        // Возвращаем исходное состояние кнопки
+                        // Return button to original state
                         setTimeout(() => {
                             this.disabled = false;
                         }, 500);
                     })
                     .catch(error => {
-                        console.error('Ошибка при обновлении рекомендаций:', error);
+                        console.error('Error refreshing recommendations:', error);
                         buttonText.textContent = 'Error';
                         setTimeout(() => {
                             this.disabled = false;
@@ -1998,7 +1897,7 @@ function showNotification(message, isError = false) {
         }
     });
 
-    // Проверка, находится ли трек в избранном
+    // Check if track is in favorites
     function checkIfTrackLiked(trackId) {
         fetch(`/spotify/check-track-saved?track_id=${trackId}`)
             .then(response => response.json())
@@ -2013,16 +1912,16 @@ function showNotification(message, isError = false) {
                 }
             })
             .catch(error => {
-                console.error('Ошибка проверки избранного:', error);
+                console.error('Error checking favorites:', error);
             });
     }
 
-    // Переключение лайка трека
+    // Toggle track like
     function toggleLikeForTrack(trackId) {
         const likeBtn = document.querySelector('.like-btn');
         const wasLiked = likeBtn.classList.contains('active');
         
-        // Оптимистичное обновление UI
+        // Optimistic UI update
         if (wasLiked) {
             likeBtn.innerHTML = '<i class="far fa-heart"></i>';
             likeBtn.classList.remove('active');
@@ -2031,7 +1930,7 @@ function showNotification(message, isError = false) {
             likeBtn.classList.add('active');
         }
         
-        // Используем бэкенд-эндпоинт для добавления/удаления трека
+        // Use backend endpoint for adding/removing track
         const url = wasLiked ? '/spotify/remove-saved-track' : '/spotify/save-track';
         const method = wasLiked ? 'DELETE' : 'POST';
         
@@ -2043,7 +1942,7 @@ function showNotification(message, isError = false) {
         .then(response => response.json())
         .then(data => {
             if (!data.success) {
-                // Возвращаем прежнее состояние при ошибке
+                // Revert to previous state on error
                 if (wasLiked) {
                     likeBtn.innerHTML = '<i class="fas fa-heart"></i>';
                     likeBtn.classList.add('active');
@@ -2051,11 +1950,11 @@ function showNotification(message, isError = false) {
                     likeBtn.innerHTML = '<i class="far fa-heart"></i>';
                     likeBtn.classList.remove('active');
                 }
-                console.error('Ошибка изменения статуса лайка:', data.error);
+                console.error('Error changing like status:', data.error);
             }
         })
         .catch(error => {
-            // Возвращаем прежнее состояние при ошибке
+            // Revert to previous state on error
             if (wasLiked) {
                 likeBtn.innerHTML = '<i class="fas fa-heart"></i>';
                 likeBtn.classList.add('active');
@@ -2063,27 +1962,27 @@ function showNotification(message, isError = false) {
                 likeBtn.innerHTML = '<i class="far fa-heart"></i>';
                 likeBtn.classList.remove('active');
             }
-            console.error('Ошибка изменения статуса лайка:', error);
+            console.error('Error changing like status:', error);
         });
     }
 
-    // Поиск похожих треков
+    // Find similar tracks
     function findSimilarTracks(trackId) {
         hideTrackModal();
         
         const container = document.getElementById('recommendations-container');
-        container.innerHTML = '<div class="loading-indicator">Поиск похожих треков...</div>';
+        container.innerHTML = '<div class="loading-indicator">Searching for similar tracks...</div>';
         
-        // Используем бэкенд-эндпоинт с параметром track_id
+        // Use backend endpoint with track_id parameter
         fetch(`/api/recommendations?track_id=${trackId}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.tracks && data.tracks.length > 0) {
-                    // Сохраняем ID треков в сессию, заменяя предыдущие рекомендации
+                    // Save track IDs to session, replacing previous recommendations
                     const trackIds = data.tracks.map(track => track.id);
                     
                     container.innerHTML = `
-                        <h2 class="section-title">Похожие треки</h2>
+                        <h2 class="section-title">Similar Tracks</h2>
                         <div class="track-list" id="recommendations-list"></div>
                     `;
                     
@@ -2092,24 +1991,24 @@ function showNotification(message, isError = false) {
                     container.scrollIntoView({ behavior: 'smooth' });
                     setupTrackInteractions();
                 } else {
-                    container.innerHTML = '<div class="notice-message">Не удалось найти похожие треки</div>';
+                    container.innerHTML = '<div class="notice-message">Could not find similar tracks</div>';
                 }
             })
             .catch(error => {
-                console.error('Ошибка запроса похожих треков:', error);
-                container.innerHTML = `<div class="error-message">Ошибка: ${error.message}</div>`;
+                console.error('Error requesting similar tracks:', error);
+                container.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
             });
     }
 
-    // Добавляем обработчики при загрузке DOM
+    // Add handlers when DOM loads
     document.addEventListener('DOMContentLoaded', function() {
         initModalHandlers();
         
-        // После загрузки контента добавляем обработчики для треков
+        // After content loads, add handlers for tracks
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'childList' && mutation.addedNodes.length) {
-                    // Если добавлены новые узлы, проверяем наличие треков
+                    // If new nodes added, check for tracks
                     if (document.querySelectorAll('.track-item').length) {
                         setupTrackInteractions();
                     }
@@ -2123,27 +2022,27 @@ function showNotification(message, isError = false) {
 
 
 
-    // Функция отображения рекомендованных треков
+    // Function to display recommended tracks
     function displayRecommendedTracks(tracks) {
       var recommendationsContainer = document.getElementById('recommendations-container');
       
-      // Очищаем контейнер
+      // Clear container
       recommendationsContainer.innerHTML = '';
       
-      // Создаем список треков
+      // Create track list
       var trackList = document.createElement('div');
       trackList.className = 'track-list';
       
-      // Добавляем каждый трек
+      // Add each track
       tracks.forEach(function(track) {
         var trackItem = createTrackElement(track);
         trackList.appendChild(trackItem);
       });
       
-      // Добавляем список в контейнер
+      // Add list to container
       recommendationsContainer.appendChild(trackList);
       
-      // Показываем кнопки действий и убеждаемся, что они видимы
+      // Show action buttons and ensure they're visible
       var actionButtons = document.getElementById('action-buttons');
       actionButtons.style.display = 'flex';
       actionButtons.style.marginTop = '20px';
@@ -2151,7 +2050,7 @@ function showNotification(message, isError = false) {
       actionButtons.style.justifyContent = 'center';
       actionButtons.style.gap = '15px';
       
-      // Проверяем, что дочерние кнопки тоже видимы
+      // Check that child buttons are also visible
       var buttons = actionButtons.querySelectorAll('button');
       buttons.forEach(function(btn) {
         btn.style.display = 'inline-block';
@@ -2159,64 +2058,64 @@ function showNotification(message, isError = false) {
         btn.style.opacity = '1';
       });
       
-      console.log("Рекомендации отображены, кнопки действий установлены в видимое состояние");
+      console.log("Recommendations displayed, action buttons set to visible state");
     }
 
-    // Получаем и выводим треки из сессии
+    // Get and display tracks from session
     function getSessionTracks() {
         fetch('/spotify/get-session-tracks')
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    console.log('Треки из сессии:', data.tracks);
+                    console.log('Tracks from session:', data.tracks);
                 } else {
-                    console.error('Ошибка получения треков из сессии:', data.error);
+                    console.error('Error getting tracks from session:', data.error);
                 }
             })
             .catch(error => {
-                console.error('Ошибка запроса:', error);
+                console.error('Request error:', error);
             });
     }
 
-    // Вызываем функцию при загрузке страницы
+    // Call function when page loads
     document.addEventListener('DOMContentLoaded', getSessionTracks);
 
-    // Добавляем кнопку "Найти похожие треки" под панелью рекомендаций
+    // Add "Find similar tracks" button under recommendations panel
     document.addEventListener('DOMContentLoaded', function() {
-        // Находим контейнер с рекомендациями
+        // Find recommendations container
         const recommendationsContainer = document.getElementById('recommendations-container');
         if (recommendationsContainer) {
-            // Создаем контейнер для кнопки
+            // Create container for button
             const findSimilarBtnContainer = document.createElement('div');
             findSimilarBtnContainer.className = 'find-similar-container';
             findSimilarBtnContainer.style.cssText = 'margin-top: 20px; text-align: center;';
             
-            // Создаем кнопку
+            // Create button
             const findSimilarBtn = document.createElement('button');
             findSimilarBtn.innerText = 'Find similar tracks';
             findSimilarBtn.className = 'btn btn-primary mt-4';
             findSimilarBtn.style.cssText = 'padding: 10px 20px; border-radius: 20px; font-weight: 600;';
             findSimilarBtn.onclick = openTrackSearchModal;
             
-            // Добавляем кнопку в контейнер
+            // Add button to container
             findSimilarBtnContainer.appendChild(findSimilarBtn);
             
-            // Добавляем контейнер после блока рекомендаций
+            // Add container after recommendations block
             recommendationsContainer.parentNode.insertBefore(findSimilarBtnContainer, recommendationsContainer.nextSibling);
             
-            // Добавляем модальное окно для поиска треков в body
+            // Add modal window for track search to body
             createTrackSearchModal();
         }
     });
 
-    // Создание модального окна для поиска треков
+    // Create modal window for track search
     function createTrackSearchModal() {
-        // Проверяем, существует ли уже модальное окно
+        // Check if modal window already exists
         if (document.getElementById('track-search-modal')) {
             return;
         }
         
-        // Создаем модальное окно
+        // Create modal window
         const modal = document.createElement('div');
         modal.id = 'track-search-modal';
         modal.className = 'modal';
@@ -2232,7 +2131,7 @@ function showNotification(message, isError = false) {
             background-color: rgba(0,0,0,0.7);
         `;
         
-        // Создаем содержимое модального окна
+        // Create modal content
         const modalContent = document.createElement('div');
         modalContent.className = 'modal-content';
         modalContent.style.cssText = `
@@ -2246,7 +2145,7 @@ function showNotification(message, isError = false) {
             position: relative;
         `;
         
-        // Создаем заголовок модального окна
+        // Create modal header
         const modalHeader = document.createElement('div');
         modalHeader.className = 'modal-header';
         modalHeader.style.cssText = `
@@ -2257,7 +2156,7 @@ function showNotification(message, isError = false) {
         `;
         
         const modalTitle = document.createElement('h3');
-        modalTitle.textContent = 'Поиск треков';
+        modalTitle.textContent = 'Track Search';
         modalTitle.style.cssText = 'margin: 0;';
         
         const closeButton = document.createElement('span');
@@ -2275,7 +2174,7 @@ function showNotification(message, isError = false) {
         modalHeader.appendChild(modalTitle);
         modalHeader.appendChild(closeButton);
         
-        // Создаем форму поиска
+        // Create search form
         const searchForm = document.createElement('div');
         searchForm.className = 'search-form';
         searchForm.style.cssText = `
@@ -2286,7 +2185,7 @@ function showNotification(message, isError = false) {
         const searchInput = document.createElement('input');
         searchInput.type = 'text';
         searchInput.id = 'track-search-input';
-        searchInput.placeholder = 'Введите название трека...';
+        searchInput.placeholder = 'Enter track name...';
         searchInput.style.cssText = `
             flex-grow: 1;
             padding: 10px;
@@ -2298,7 +2197,7 @@ function showNotification(message, isError = false) {
         
         const searchButton = document.createElement('button');
         searchButton.id = 'track-search-button';
-        searchButton.textContent = 'Искать';
+        searchButton.textContent = 'Search';
         searchButton.style.cssText = `
             padding: 10px 15px;
             border: none;
@@ -2312,7 +2211,7 @@ function showNotification(message, isError = false) {
         searchForm.appendChild(searchInput);
         searchForm.appendChild(searchButton);
         
-        // Создаем контейнер для результатов поиска
+        // Create container for search results
         const resultsContainer = document.createElement('div');
         resultsContainer.id = 'track-search-results';
         resultsContainer.style.cssText = `
@@ -2320,7 +2219,7 @@ function showNotification(message, isError = false) {
             overflow-y: auto;
         `;
         
-        // Создаем индикатор загрузки
+        // Create loading indicator
         const loadingIndicator = document.createElement('div');
         loadingIndicator.id = 'track-search-loading';
         loadingIndicator.style.cssText = `
@@ -2328,19 +2227,19 @@ function showNotification(message, isError = false) {
             text-align: center;
             padding: 20px;
         `;
-        loadingIndicator.innerHTML = '<div class="spinner"></div><p>Загрузка...</p>';
+        loadingIndicator.innerHTML = '<div class="spinner"></div><p>Loading...</p>';
         
-        // Добавляем все элементы в модальное окно
+        // Add all elements to the modal window
         modalContent.appendChild(modalHeader);
         modalContent.appendChild(searchForm);
         modalContent.appendChild(loadingIndicator);
         modalContent.appendChild(resultsContainer);
         modal.appendChild(modalContent);
         
-        // Добавляем модальное окно в body
+        // Add modal window to body
         document.body.appendChild(modal);
         
-        // Добавляем CSS для индикатора загрузки
+        // Add CSS for loading indicator
         const style = document.createElement('style');
         style.textContent = `
             .spinner {
@@ -2397,7 +2296,7 @@ function showNotification(message, isError = false) {
         `;
         document.head.appendChild(style);
         
-        // Добавляем обработчик для клавиши Enter в поле поиска
+        // Add handler for Enter key in the search field
         searchInput.addEventListener('keyup', function(event) {
             if (event.key === 'Enter') {
                 searchTracks();
@@ -2405,54 +2304,54 @@ function showNotification(message, isError = false) {
         });
     }
 
-    // Функция для открытия модального окна поиска треков
+    // Function to open the track search modal
     function openTrackSearchModal() {
         const modal = document.getElementById('track-search-modal');
         if (modal) {
             modal.style.display = 'block';
-            // Устанавливаем фокус на поле ввода
+            // Set focus on the input field
             setTimeout(() => {
                 document.getElementById('track-search-input').focus();
             }, 100);
         }
     }
 
-    // Функция для поиска треков
+    // Function to search tracks
     function searchTracks() {
         const searchInput = document.getElementById('track-search-input');
         const resultsContainer = document.getElementById('track-search-results');
         const loadingIndicator = document.getElementById('track-search-loading');
         
-        // Получаем поисковый запрос
+        // Get the search query
         const query = searchInput.value.trim();
         if (!query) {
-            showNotification('Введите название трека для поиска', true);
+            showNotification('Enter track name to search', true);
             return;
         }
         
-        // Показываем индикатор загрузки
+        // Show loading indicator
         resultsContainer.innerHTML = '';
         loadingIndicator.style.display = 'block';
         
-        // Выполняем запрос к API
+        // Execute API request
         fetch(`/spotify/search-tracks?q=${encodeURIComponent(query)}`)
             .then(response => response.json())
             .then(data => {
-                // Скрываем индикатор загрузки
+                // Hide loading indicator
                 loadingIndicator.style.display = 'none';
                 
                 if (!data.success) {
-                    showNotification('Ошибка при поиске треков: ' + data.error, true);
+                    showNotification('Error searching tracks: ' + data.error, true);
                     return;
                 }
                 
-                // Проверяем, есть ли результаты
+                // Check if there are results
                 if (!data.tracks || data.tracks.length === 0) {
-                    resultsContainer.innerHTML = '<p style="text-align: center; color: #b3b3b3;">Треки не найдены</p>';
+                    resultsContainer.innerHTML = '<p style="text-align: center; color: #b3b3b3;">No tracks found</p>';
                     return;
                 }
                 
-                // Отображаем результаты поиска
+                // Display search results
                 data.tracks.forEach(track => {
                     const trackItem = createTrackSearchItem(track);
                     resultsContainer.appendChild(trackItem);
@@ -2460,31 +2359,31 @@ function showNotification(message, isError = false) {
             })
             .catch(error => {
                 loadingIndicator.style.display = 'none';
-                console.error('Ошибка при поиске треков:', error);
-                showNotification('Ошибка при поиске треков', true);
+                console.error('Error searching tracks:', error);
+                showNotification('Error searching tracks', true);
             });
     }
 
-    // Функция для создания элемента с результатом поиска
+    // Function to create a search result item
     function createTrackSearchItem(track) {
         const trackItem = document.createElement('div');
         trackItem.className = 'track-search-item';
         trackItem.setAttribute('data-track-id', track.id);
         trackItem.setAttribute('data-track-uri', track.uri);
         
-        // Добавляем обложку трека
+        // Add track cover
         const trackImage = document.createElement('img');
         trackImage.className = 'track-search-image';
         
         if (track.album && track.album.images && track.album.images.length > 0) {
             trackImage.src = track.album.images[0].url;
         } else {
-            trackImage.src = '/static/images/default-album.png'; // Путь к дефолтному изображению
+            trackImage.src = '/static/images/default-album.png'; // Path to default image
         }
         
         trackImage.alt = track.name;
         
-        // Добавляем информацию о треке
+        // Add track information
         const trackInfo = document.createElement('div');
         trackInfo.className = 'track-search-info';
         
@@ -2495,19 +2394,19 @@ function showNotification(message, isError = false) {
         const trackArtist = document.createElement('div');
         trackArtist.className = 'track-search-artist';
         
-        // Собираем имена артистов
+        // Collect artist names
         if (track.artists && track.artists.length > 0) {
             trackArtist.textContent = track.artists.map(artist => artist.name).join(', ');
         }
         
-        // Собираем все элементы вместе
+        // Assemble all elements together
         trackInfo.appendChild(trackName);
         trackInfo.appendChild(trackArtist);
         
         trackItem.appendChild(trackImage);
         trackItem.appendChild(trackInfo);
         
-        // Добавляем обработчик события клика
+        // Add click event handler
         trackItem.addEventListener('click', function() {
             const trackId = this.getAttribute('data-track-id');
             getSimilarTracks(trackId);
@@ -2516,66 +2415,66 @@ function showNotification(message, isError = false) {
         return trackItem;
     }
 
-    // Функция для получения похожих треков
+    // Function to get similar tracks
     function getSimilarTracks(trackId) {
-        // Закрываем модальное окно поиска
+        // Close the search modal
         document.getElementById('track-search-modal').style.display = 'none';
         
-        // Показываем уведомление о поиске похожих треков
-        showNotification('Ищем похожие треки...', false);
+        // Show notification about searching similar tracks
+        showNotification('Searching for similar tracks...', false);
         
-        // Выполняем запрос к API
-    // Отправляем запрос на получение похожих треков
+        // Execute API request
+    // Send request to get similar tracks
     fetch('/spotify/get-similar-tracks?track_id=' + trackId)
       .then(function(response) {
         if (!response.ok) {
-          throw new Error('Ошибка сервера: ' + response.status);
+          throw new Error('Server error: ' + response.status);
         }
         return response.json();
       })
       .then(function(data) {
-        console.log("Получены рекомендации:", data.tracks ? data.tracks.length : 0);
+        console.log("Recommendations received:", data.tracks ? data.tracks.length : 0);
         
-        // Возвращаем кнопку в исходное состояние (хотя модальное окно уже закрыто)
+        // Return button to initial state (although modal is already closed)
         this.innerHTML = 'Similar';
         this.disabled = false;
         
         if (data.success && data.tracks && data.tracks.length > 0) {
-          // Отображаем рекомендации
+          // Display recommendations
           displayRecommendations(data.tracks);
           saveTracksToSession(data.tracks);
-          // Показываем кнопки действий
+          // Show action buttons
           document.getElementById('action-buttons').style.display = 'block';
         } else {
           recommendationsContainer.innerHTML = `
             <div class="alert alert-warning">
-              Не удалось получить похожие треки: ${data.error || 'Нет данных'}
+              Failed to get similar tracks: ${data.error || 'No data'}
             </div>
           `;
         }
       }.bind(this))
       .catch(function(error) {
-        console.error("Ошибка при запросе похожих треков:", error);
+        console.error("Error requesting similar tracks:", error);
         
-        // Возвращаем кнопку в исходное состояние
+        // Return button to initial state
         this.innerHTML = 'Similar';
         this.disabled = false;
         
-        // Показываем сообщение об ошибке
+        // Show error message
         recommendationsContainer.innerHTML = `
           <div class="alert alert-danger">
-            Ошибка при получении похожих треков: ${error.message}
+            Error getting similar tracks: ${error.message}
           </div>
         `;
       }.bind(this));
   }
 </script>
 
-<!-- Добавьте перед закрывающим тегом </body> -->
+<!-- Add before closing </body> tag -->
 <script>
-// Функция для принудительного применения стилей
+// Function to force apply styles
 function applyModalStyles() {
-  console.log("Применение принудительных стилей к модальному окну");
+  console.log("Applying forced styles to modal window");
   
   const styleElement = document.createElement('style');
   styleElement.id = 'custom-modal-styles';
@@ -2739,43 +2638,43 @@ function applyModalStyles() {
     }
   `;
   
-  // Удаляем предыдущие стили, если они были
+  // Remove previous styles if they existed
   const oldStyles = document.getElementById('custom-modal-styles');
   if (oldStyles) {
     oldStyles.remove();
   }
   
-  // Добавляем новые стили в <head>
+  // Add new styles to <head>
   document.head.appendChild(styleElement);
   
-  console.log("Стили модального окна обновлены");
+  console.log("Modal window styles updated");
 }
 
-// Вызываем функцию сразу после загрузки страницы
+// Call function immediately after page load
 document.addEventListener('DOMContentLoaded', applyModalStyles);
 </script>
 
 <script type="text/javascript">
-// JavaScript для работы с модальным окном плейлистов
+// JavaScript for working with playlist modal window
 (function() {
-  // Элементы модальных окон
+  // Modal window elements
   const playlistModal = document.getElementById('playlist-modal');
   const createPlaylistModal = document.getElementById('create-playlist-modal');
   const playlistsList = document.getElementById('playlists-list');
   const playlistSearch = document.getElementById('playlist-search');
   
-  // Кнопки и закрытия
+  // Buttons and close elements
   const closePlaylistModal = document.querySelector('.close-playlist-modal');
   const closeCreateModal = document.querySelectorAll('.close-create-modal');
   const createPlaylistBtn = document.getElementById('create-playlist-btn');
   const createPlaylistForm = document.getElementById('create-playlist-form');
   
-  // Глобальные переменные
+  // Global variables
   let currentTrackUri = '';
   let allPlaylists = [];
   let filteredPlaylists = [];
   
-  // Привязка обработчиков модальных окон
+  // Binding modal window handlers
   if (closePlaylistModal) {
     closePlaylistModal.addEventListener('click', () => {
       playlistModal.style.display = 'none';
@@ -2788,7 +2687,7 @@ document.addEventListener('DOMContentLoaded', applyModalStyles);
     });
   });
   
-  // Закрытие при клике вне модального окна
+  // Close when clicking outside the modal window
   window.addEventListener('click', (event) => {
     if (event.target === playlistModal) {
       playlistModal.style.display = 'none';
@@ -2798,7 +2697,7 @@ document.addEventListener('DOMContentLoaded', applyModalStyles);
     }
   });
   
-  // Открытие окна создания плейлиста
+  // Opening playlist creation window
   if (createPlaylistBtn) {
     createPlaylistBtn.addEventListener('click', () => {
       playlistModal.style.display = 'none';
@@ -2806,7 +2705,7 @@ document.addEventListener('DOMContentLoaded', applyModalStyles);
     });
   }
   
-  // Поиск по плейлистам
+  // Search through playlists
   if (playlistSearch) {
     playlistSearch.addEventListener('input', () => {
       const searchTerm = playlistSearch.value.toLowerCase();
@@ -2814,7 +2713,7 @@ document.addEventListener('DOMContentLoaded', applyModalStyles);
     });
   }
   
-  // Функция фильтрации плейлистов
+  // Function to filter playlists
   function filterPlaylists(searchTerm) {
     filteredPlaylists = allPlaylists.filter(playlist => 
       playlist.name.toLowerCase().includes(searchTerm)
@@ -2822,7 +2721,7 @@ document.addEventListener('DOMContentLoaded', applyModalStyles);
     renderPlaylists(filteredPlaylists);
   }
   
-  // Функция загрузки плейлистов
+  // Function to load playlists
   function loadPlaylists() {
     playlistsList.innerHTML = `<div class="playlist-loading"><div class="spinner"></div></div>`;
     
@@ -2835,23 +2734,23 @@ document.addEventListener('DOMContentLoaded', applyModalStyles);
           renderPlaylists(allPlaylists);
         } else {
           playlistsList.innerHTML = `<div class="playlist-message">
-            Не удалось загрузить плейлисты: ${data.error || 'Неизвестная ошибка'}
+            Failed to load playlists: ${data.error || 'Unknown error'}
           </div>`;
         }
       })
       .catch(error => {
-        console.error('Ошибка при загрузке плейлистов:', error);
+        console.error('Error loading playlists:', error);
         playlistsList.innerHTML = `<div class="playlist-message">
-          Ошибка при загрузке плейлистов
+          Error loading playlists
         </div>`;
       });
   }
   
-  // Функция отрисовки плейлистов
+  // Function to render playlists
   function renderPlaylists(playlists) {
     if (playlists.length === 0) {
       playlistsList.innerHTML = `<div class="playlist-message">
-        Плейлисты не найдены
+        No playlists found
       </div>`;
       return;
     }
@@ -2868,7 +2767,7 @@ document.addEventListener('DOMContentLoaded', applyModalStyles);
           <div class="playlist-info">
             <div class="playlist-name">${playlist.name}</div>
             <div class="playlist-details">
-              ${playlist.tracks.total} треков • ${playlist.public ? 'Публичный' : 'Приватный'}
+              ${playlist.tracks.total} tracks • ${playlist.public ? 'Public' : 'Private'}
             </div>
           </div>
         </div>
@@ -2877,7 +2776,7 @@ document.addEventListener('DOMContentLoaded', applyModalStyles);
     
     playlistsList.innerHTML = html;
     
-    // Добавляем обработчики для элементов плейлиста
+    // Add handlers for playlist items
     const playlistItems = document.querySelectorAll('.playlist-item');
     playlistItems.forEach(item => {
       item.addEventListener('click', () => {
@@ -2887,30 +2786,30 @@ document.addEventListener('DOMContentLoaded', applyModalStyles);
     });
   }
   
-  // Функция добавления трека в плейлист
+  // Function to add track to playlist
   function addTrackToPlaylist(playlistId) {
     if (!currentTrackUri) {
-      showNotification('Не выбран трек для добавления', true);
+      showNotification('No track selected to add', true);
       return;
     }
     
-    // Показываем индикатор загрузки
+    // Show loading indicator
     playlistsList.innerHTML = `<div class="playlist-loading"><div class="spinner"></div></div>`;
     
-      // Определяем режим (добавление одного трека или всех треков)
+      // Determine mode (adding one track or all tracks)
       const mode = playlistModal.getAttribute('data-mode') || 'single_track';
       
-      console.log('Режим добавления треков:', mode);
-      console.log('ID плейлиста:', playlistId);
-      console.log('Текущий URI трека:', currentTrackUri);
+      console.log('Track addition mode:', mode);
+      console.log('Playlist ID:', playlistId);
+      console.log('Current track URI:', currentTrackUri);
       
       if (mode === 'all_tracks') {
-        // Добавляем все треки из сессии
+        // Add all tracks from session
         const requestData = {
           playlist_id: playlistId
         };
         
-        console.log('Отправляемые данные для всех треков:', JSON.stringify(requestData));
+        console.log('Data being sent for all tracks:', JSON.stringify(requestData));
         
         fetch('/spotify/add-all-tracks-to-playlist', {
           method: 'POST',
@@ -2920,32 +2819,32 @@ document.addEventListener('DOMContentLoaded', applyModalStyles);
           body: JSON.stringify(requestData)
         })
         .then(response => {
-          console.log('Статус ответа:', response.status);
+          console.log('Response status:', response.status);
           return response.json();
         })
         .then(data => {
-          console.log('Ответ сервера:', data);
+          console.log('Server response:', data);
           
           if (data.success) {
-            // Успешное добавление
+            // Successful addition
             playlistModal.style.display = 'none';
-            showNotification(`Успешно добавлено ${data.added_count || 'несколько'} треков в плейлист`);
+            showNotification(`Successfully added ${data.added_count || 'several'} tracks to playlist`);
           } else {
-            // Ошибка
-            showNotification('Ошибка: ' + (data.error || 'Неизвестная ошибка при добавлении треков'), true);
-            loadPlaylists(); // Перезагружаем плейлисты
+            // Error
+            showNotification('Error: ' + (data.error || 'Unknown error adding tracks'), true);
+            loadPlaylists(); // Reload playlists
           }
         })
         .catch(error => {
-          console.error('Ошибка при добавлении треков в плейлист:', error);
-          showNotification('Ошибка при обработке запроса: ' + error.message, true);
-          loadPlaylists(); // Перезагружаем плейлисты
+          console.error('Error adding tracks to playlist:', error);
+          showNotification('Error processing request: ' + error.message, true);
+          loadPlaylists(); // Reload playlists
         });
       } else {
-        // Добавляем один трек
+        // Add one track
         if (!currentTrackUri) {
-          console.error('Не выбран трек для добавления');
-          showNotification('Не выбран трек для добавления', true);
+          console.error('No track selected to add');
+          showNotification('No track selected to add', true);
           return;
         }
         
@@ -2954,7 +2853,7 @@ document.addEventListener('DOMContentLoaded', applyModalStyles);
           track_uri: currentTrackUri
         };
         
-        console.log('Отправляемые данные для одного трека:', JSON.stringify(requestData));
+        console.log('Data being sent for one track:', JSON.stringify(requestData));
         
         fetch('/spotify/add-track-to-playlist', {
           method: 'POST',
@@ -2964,31 +2863,31 @@ document.addEventListener('DOMContentLoaded', applyModalStyles);
           body: JSON.stringify(requestData)
         })
         .then(response => {
-          console.log('Статус ответа:', response.status);
+          console.log('Response status:', response.status);
           return response.json();
         })
         .then(data => {
-          console.log('Ответ сервера:', data);
+          console.log('Server response:', data);
           
           if (data.success) {
-            // Успешное добавление
+            // Successful addition
             playlistModal.style.display = 'none';
-            showNotification('Трек успешно добавлен в плейлист');
+            showNotification('Track successfully added to playlist');
           } else {
-            // Ошибка
-            showNotification('Ошибка: ' + (data.error || 'Неизвестная ошибка при добавлении трека'), true);
-            loadPlaylists(); // Перезагружаем плейлисты
+            // Error
+            showNotification('Error: ' + (data.error || 'Unknown error adding track'), true);
+            loadPlaylists(); // Reload playlists
           }
         })
         .catch(error => {
-          console.error('Ошибка при добавлении трека в плейлист:', error);
-          showNotification('Ошибка при обработке запроса: ' + error.message, true);
-          loadPlaylists(); // Перезагружаем плейлисты
+          console.error('Error adding track to playlist:', error);
+          showNotification('Error processing request: ' + error.message, true);
+          loadPlaylists(); // Reload playlists
         });
       }
     }
   
-  // Функция создания нового плейлиста
+  // Function to create a new playlist
   if (createPlaylistForm) {
     createPlaylistForm.addEventListener('submit', (event) => {
       event.preventDefault();
@@ -2997,7 +2896,7 @@ document.addEventListener('DOMContentLoaded', applyModalStyles);
       const playlistDesc = document.getElementById('playlist-description').value;
       const isPublic = document.getElementById('playlist-public').checked;
       
-      // Показываем индикатор загрузки на кнопке
+      // Show loading indicator on button
       const submitBtn = createPlaylistForm.querySelector('.submit-btn');
       const originalBtnText = submitBtn.innerHTML;
       submitBtn.innerHTML = '<div class="spinner-small"></div>';
@@ -3012,106 +2911,106 @@ document.addEventListener('DOMContentLoaded', applyModalStyles);
           name: playlistName,
           description: playlistDesc,
           public: isPublic,
-          track_uri: currentTrackUri // Если нужно сразу добавить трек
+          track_uri: currentTrackUri // If need to add track immediately
         })
       })
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          // Закрываем модальное окно
+          // Close modal window
           createPlaylistModal.style.display = 'none';
-          showNotification('Плейлист успешно создан' + (currentTrackUri ? ' и трек добавлен' : ''));
+          showNotification('Playlist successfully created' + (currentTrackUri ? ' and track added' : ''));
           
-          // Сбрасываем форму
+          // Reset form
           createPlaylistForm.reset();
         } else {
-          showNotification(data.error || 'Ошибка при создании плейлиста', true);
+          showNotification(data.error || 'Error creating playlist', true);
         }
       })
       .catch(error => {
-        console.error('Ошибка при создании плейлиста:', error);
-        showNotification('Ошибка при создании плейлиста', true);
+        console.error('Error creating playlist:', error);
+        showNotification('Error creating playlist', true);
       })
       .finally(() => {
-        // Восстанавливаем кнопку
+        // Restore button
         submitBtn.innerHTML = originalBtnText;
         submitBtn.disabled = false;
       });
     });
   }
   
-  // Обновляем функцию для показа модального окна плейлистов
+  // Update function to show playlist selector modal
   window.showPlaylistSelector = function(trackUri) {
     currentTrackUri = trackUri;
     
-    // Закрываем модальное окно трека, если оно открыто
+    // Close track modal if it's open
     const trackModal = document.getElementById('trackModal');
     if (trackModal && trackModal.style.display === 'block') {
         trackModal.style.display = 'none';
     }
     
-    // Добавляем атрибут для определения режима (один трек или все треки)
+    // Add attribute to determine mode (one track or all tracks)
     playlistModal.setAttribute('data-mode', trackUri === 'ALL_SESSION_TRACKS' ? 'all_tracks' : 'single_track');
     
-    // Обновляем заголовок модального окна в зависимости от режима
+    // Update modal title depending on mode
     const modalTitle = document.querySelector('.modal-header h3');
     if (modalTitle) {
       modalTitle.textContent = trackUri === 'ALL_SESSION_TRACKS' ? 
-        'Добавить все треки в плейлист' : 'Добавить трек в плейлист';
+        'Add all tracks to playlist' : 'Add track to playlist';
     }
     
-    // Загружаем плейлисты
+    // Load playlists
     loadPlaylists();
     
-    // Показываем модальное окно
+    // Show modal window
     playlistModal.style.display = 'block';
   };
   
-  // Привязка к кнопке в плеере
+  // Binding to player button
   document.addEventListener('DOMContentLoaded', function() {
-    // Кнопка в модальном окне трека
+    // Button in track modal
     const modalPlaylistBtn = document.getElementById('modal-playlist-btn');
     if (modalPlaylistBtn) {
         modalPlaylistBtn.onclick = function() {
             const trackModal = document.getElementById('trackModal');
             const trackUri = trackModal.getAttribute('data-track-uri');
-            // Закрываем модальное окно трека
+            // Close track modal
             trackModal.style.display = 'none';
-            // Открываем окно выбора плейлиста
+            // Open playlist selector
             showPlaylistSelector(trackUri);
         };
     }
     
-    // Кнопка в плеере (если есть)
+    // Button in player (if exists)
     const playerPlaylistBtn = document.querySelector('.player-add-to-playlist');
     if (playerPlaylistBtn) {
       playerPlaylistBtn.addEventListener('click', function() {
-        // Получаем URI текущего трека из плеера
+        // Get current track URI from player
         const currentTrackElement = document.querySelector('[data-current-track-uri]');
         if (currentTrackElement) {
           const trackUri = currentTrackElement.getAttribute('data-current-track-uri');
           if (trackUri) {
             showPlaylistSelector(trackUri);
           } else {
-            showNotification('Не удалось определить текущий трек', true);
+            showNotification('Could not determine current track', true);
           }
         } else {
-          showNotification('Нет воспроизводимого трека', true);
+          showNotification('No track playing', true);
         }
       });
     }
   });
 })();
 
-// Добавляем обработчик для кнопки "Add all to playlist"
+// Add handler for "Add all to playlist" button
 document.addEventListener('DOMContentLoaded', function() {
   // ... existing code ...
 
-  // Кнопка "Добавить все в плейлист"
+  // "Add all to playlist" button
   const addAllToPlaylistBtn = document.getElementById('add-all-to-playlist');
   if (addAllToPlaylistBtn) {
     addAllToPlaylistBtn.addEventListener('click', function() {
-      // Используем специальный идентификатор для обозначения всех треков из сессии
+      // Use special identifier to denote all tracks from session
       showPlaylistSelector('ALL_SESSION_TRACKS');
     });
   }

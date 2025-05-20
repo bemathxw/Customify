@@ -12,21 +12,21 @@ from flask import Flask, flash, g, jsonify, render_template, request, session, r
 from loguru import logger
 from flask_session import Session
 
-# ПОЛНОЕ ОТКЛЮЧЕНИЕ ЛОГИРОВАНИЯ ДЛЯ NOW-PLAYING ЗАПРОСОВ
+# COMPLETE DISABLING OF LOGGING FOR NOW-PLAYING REQUESTS
 # ===================================================
 
-# 1. Отключаем логи Flask
+# 1. Disable Flask logs
 from flask.logging import default_handler
-default_handler.setLevel(logging.ERROR)  # Устанавливаем высокий уровень логирования для Flask
+default_handler.setLevel(logging.ERROR)  # Set high logging level for Flask
 
-# 2. Перехватываем все стандартные логи Python
+# 2. Intercept all standard Python logs
 class NowPlayingFilter(logging.Filter):
     def filter(self, record):
-        # Если this строка содержит now-playing, отфильтровываем
+        # If this line contains now-playing, filter it
         if hasattr(record, 'msg') and isinstance(record.msg, str) and 'now-playing' in record.msg:
             return False
         
-        # Проверяем args если они есть
+        # Check args if they exist
         if hasattr(record, 'args'):
             args_str = str(record.args)
             if 'now-playing' in args_str:
@@ -34,16 +34,16 @@ class NowPlayingFilter(logging.Filter):
                 
         return True
 
-# Применяем фильтр к корневому логгеру Python
+# Apply filter to Python's root logger
 root_logger = logging.getLogger()
 root_logger.addFilter(NowPlayingFilter())
 
-# 3. Отключаем логи Werkzeug
+# 3. Disable Werkzeug logs
 werkzeug_logger = logging.getLogger('werkzeug')
-werkzeug_logger.setLevel(logging.ERROR)  # Только критические ошибки
+werkzeug_logger.setLevel(logging.ERROR)  # Only critical errors
 werkzeug_logger.addFilter(NowPlayingFilter())
 
-# 4. Патчим WSGIRequestHandler для игнорирования now-playing
+# 4. Patch WSGIRequestHandler to ignore now-playing
 from werkzeug.serving import WSGIRequestHandler
 
 original_log = WSGIRequestHandler.log
@@ -54,19 +54,19 @@ def silent_log(self, type, message, *args):
 
 WSGIRequestHandler.log = silent_log
 
-# 5. Глобальная переменная для отслеживания now-playing запросов
+# 5. Global variable for tracking now-playing requests
 class RequestState:
     is_now_playing = False
 
 req_state = RequestState()
 
-# Остальной импорт
+# Other imports
 from errors import AppError, SpotifyAPIError, AuthenticationError, DataProcessingError, catch_exceptions, safe_execute
 from spotify_api import get_recommendations, get_top_tracks, is_premium_user, get_headers, get_current_user, get_spotify_user_profile
 from spotify import spotify_bp
 import jinja2
 
-# Импортируем систему профилирования
+# Import profiling system
 from profiling import (
     init_profiling_middleware, timed, CPUProfiler, MemoryProfiler,
     get_timing_metrics, APIProfiler, start_resource_monitoring,
@@ -74,23 +74,23 @@ from profiling import (
     get_user_metrics
 )
 
-# Настраиваем Flask для отключения логирования запросов к now-playing
+# Configure Flask to disable logging for now-playing requests
 class CustomFlask(Flask):
     def log_request(self, response):
-        # Перегружаем метод log_request для фильтрации запросов к now-playing
+        # Override log_request method to filter now-playing requests
         if not request.path.endswith('/now-playing'):
             super().log_request(response)
 
-# Фильтр для исключения now-playing запросов из логов
+# Filter to exclude now-playing requests from logs
 def filter_now_playing(record):
     """
-    Пропускаем логи для всех запросов, кроме запросов к /spotify/now-playing
+    Pass logs for all requests except requests to /spotify/now-playing
     """
-    # Проверяем, содержится ли в сообщении или пути запроса now-playing
+    # Check if the message or request path contains now-playing
     if "now-playing" in record["message"].lower():
         return False
     
-    # Проверяем extra-данные, если они есть
+    # Check extra data if it exists
     if "extra" in record and record["extra"]:
         path = record["extra"].get("path", "")
         if isinstance(path, str) and "now-playing" in path:
@@ -118,21 +118,21 @@ def setup_logging():
     # Remove default logger
     logger.remove()
     
-    # Кастомный фильтр для Loguru
+    # Custom filter for Loguru
     def advanced_filter(record):
-        """Расширенный фильтр для Loguru"""
-        # Проверяем глобальное состояние запроса
+        """Advanced filter for Loguru"""
+        # Check global request state
         if req_state.is_now_playing:
             return False
             
-        # Проверяем сообщение
+        # Check message
         if "now-playing" in record["message"].lower():
             return False
             
-        # Проверяем дополнительные данные
+        # Check additional data
         extra = record.get("extra", {})
         if extra and isinstance(extra, dict):
-            # Проверяем путь запроса если есть
+            # Check request path if exists
             path = extra.get("path", "")
             if isinstance(path, str) and "now-playing" in path:
                 return False
@@ -337,15 +337,15 @@ def apply_exception_handling(module):
             if hasattr(attr, '__wrapped__'):
                 continue
                 
-            # Skip Flask view functions (проверяем несколько атрибутов)
+            # Skip Flask view functions (check multiple attributes)
             if hasattr(attr, 'view_class') or hasattr(attr, '_is_view') or hasattr(attr, '__blueprints__'):
                 continue
                 
-            # Проверяем, является ли функция маршрутом Flask
+            # Check if function is a Flask route
             if hasattr(attr, '__module__') and 'flask' in attr.__module__:
                 continue
                 
-            # Дополнительная проверка для маршрутов Blueprint
+            # Additional check for Blueprint routes
             if name in getattr(module, 'view_functions', {}) or hasattr(attr, 'methods'):
                 continue
                 
@@ -576,7 +576,7 @@ def home():
     logger.info("Rendering home page")
     logger.debug(f"Session in home: {session}")
     
-    # Проверяем, авторизован ли пользователь
+    # Check if user is authenticated
     if 'spotify_token' in session:
         logger.info(f"User is authenticated: {session.get('username', 'Unknown')}")
     else:
@@ -586,34 +586,34 @@ def home():
 
 @app.route('/api/recommendations', methods=['GET'])
 def api_recommendations():
-    """Эндпоинт для получения рекомендаций"""
+    """Endpoint for getting recommendations"""
     try:
-        app.logger.info("Запрос рекомендаций")
+        app.logger.info("Requesting recommendations")
         
-        # Проверяем авторизацию
+        # Check authorization
         if 'spotify_token' not in session:
-            app.logger.warning("Пользователь не авторизован для получения рекомендаций")
+            app.logger.warning("User not authorized to get recommendations")
             return jsonify({
                 'success': False,
-                'error': 'Требуется авторизация Spotify'
+                'error': 'Spotify authorization required'
             }), 401
         
-        # Получаем рекомендации
+        # Get recommendations
         result = get_recommendations()
         
-        # Возвращаем результат
+        # Return result
         if not result.get('success'):
-            app.logger.error(f"Ошибка получения рекомендаций: {result.get('error')}")
+            app.logger.error(f"Error getting recommendations: {result.get('error')}")
             return jsonify(result), 500
         
         return jsonify(result)
         
     except Exception as e:
-        app.logger.error(f"Неожиданная ошибка при получении рекомендаций: {str(e)}")
+        app.logger.error(f"Unexpected error when getting recommendations: {str(e)}")
         app.logger.error(traceback.format_exc())
         return jsonify({
             'success': False,
-            'error': f"Внутренняя ошибка сервера: {str(e)}"
+            'error': f"Internal server error: {str(e)}"
         }), 500
 
 @app.route('/profile')
@@ -622,12 +622,12 @@ def profile():
     logger.info("Rendering profile page")
     logger.debug(f"Session in profile: {session}")
     
-    # Проверяем, авторизован ли пользователь
+    # Check if user is authenticated
     if 'spotify_token' not in session:
         logger.info("User not authenticated, showing login button")
         return render_template('profile.html', show_login_button=True)
     
-    # Получаем топ треки пользователя
+    # Get user's top tracks
     try:
         headers = get_headers()
         if not headers:
@@ -635,10 +635,10 @@ def profile():
             return render_template('profile.html', show_login_button=True)
         
         user_data = get_spotify_user_profile()
-        # Получаем топ треки
+        # Get top tracks
         top_tracks = get_top_tracks(headers)
         
-        # Проверяем, является ли пользователь премиум-пользователем
+        # Check if user is a premium user
         premium_user = is_premium_user()
         
         logger.info(f"Rendering profile with {len(top_tracks)} top tracks")
@@ -646,13 +646,13 @@ def profile():
             'profile.html', 
             show_login_button=False, 
             top_tracks=top_tracks,
-            user_name=user_data.get('display_name', 'Пользователь Spotify'),
+            user_name=user_data.get('display_name', 'Spotify User'),
             user_avatar=user_data.get('images', [{}])[0].get('url') if user_data.get('images') else None,
             premium_user=premium_user
         )
     except Exception as e:
         logger.error(f"Error rendering profile: {str(e)}", exc_info=True)
-        # В случае ошибки показываем страницу с кнопкой входа
+        # In case of error, show page with login button
         return render_template('profile.html', show_login_button=True)
 
 @app.route('/get-recommendations')
@@ -689,20 +689,20 @@ def init_app():
     
     logger.info("Application initialized with comprehensive exception handling")
 
-# Вместо @app.before_first_request используйте with app.app_context()
-# или создайте функцию, которая будет вызываться при запуске приложения
+# Instead of @app.before_first_request use with app.app_context()
+# or create a function that will be called when the application starts
 
-# Вариант 1: Использование with app.app_context()
+# Option 1: Using with app.app_context()
 def init_app_resources():
     """Initialize application resources like monitoring."""
     start_resource_monitoring(interval=10.0, log_to_console=False)
     logger.info("Resource monitoring started")
 
-# Вызов функции при запуске приложения
+# Call function when application starts
 with app.app_context():
     init_app_resources()
 
-# Вариант 2: Использование события first_request
+# Option 2: Using first_request event
 @app.before_request
 def before_first_request_handler():
     """Start resource monitoring on first request."""
@@ -772,5 +772,5 @@ if __name__ == "__main__":
     logger.info("Starting Flask application in debug mode")
     app.run(debug=True)
 
-# Инициализация сессии
+# Initialize session
 Session(app)
