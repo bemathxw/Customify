@@ -362,7 +362,7 @@ def get_skiley_recommendations(track_id, limit=10):
             'accept': '*/*',
             'content-type': 'application/json',
             'x-skiley-client-name': 'skiley-web-user',
-            'x-skiley-client-version': 'v4.2.860',
+            'x-skiley-client-version': 'v4.2.861',
             'x-skiley-platform-name': 'web',
             'origin': 'https://skiley.net',
             'referer': 'https://skiley.net/'

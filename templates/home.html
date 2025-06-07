@@ -3,42 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
+    <title>Customify - Advanced Spotify Music Manager</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
 
 <header>
     <div class="logo">
-        <a href="{{ url_for('home') }}">LOGO</a>
+        <a href="{{ url_for('home') }}">Customify</a>
     </div>
     <div class="auth-buttons">
         <a href="{{ url_for('profile') }}">Profile</a>
     </div>
 </header>
 
-<div class="info-block">
-    <h1>About Our Service</h1>
-    <p>
-        Welcome to our music recommendation service! With the help of advanced AI algorithms and integration with Spotify, we offer you personalized music recommendations based on your listening preferences.
-        Whether you want to discover new artists, explore different genres, or fine-tune your playlist with specific musical attributes like tempo, energy, or danceability, our service provides a highly customized experience.
-    </p>
+<div class="home-container">
+    <!-- Main hero block -->
+    <div class="hero-block">
+        <div class="hero-content">
+            <h1>Customify</h1>
+            <p>Your Ultimate Spotify Companion - Advanced Music Discovery, Playlist Management & Playback Control</p>
+        </div>
+    </div>
 
-    <h2>Key Features</h2>
-    <ul>
-        <li><strong>Spotify Integration:</strong> Connect your Spotify account to get personalized recommendations based on your listening habits.</li>
-        <li><strong>Customizable Filters:</strong> Use our sliders to control various parameters like loudness, tempo, and energy to refine your recommendations.</li>
-        <li><strong>Playlist Creation:</strong> Easily create and manage playlists directly from our platform, and add recommended tracks to your Spotify account.</li>
-        <li><strong>Music Discovery:</strong> Discover similar tracks and artists based on your favorite music, with endless possibilities for exploring new tunes.</li>
-    </ul>
+    <!-- Main info block -->
+    <div class="main-info-block">
+        <h2>About Customify</h2>
+        <p>
+            Customify is a powerful web application that transforms your Spotify experience by providing advanced music management tools and discovery features. 
+            Built with Flask and integrated with Spotify's Web API, our platform offers comprehensive playlist management, music recommendations based on your top track, 
+            and full playback control - all through an intuitive, modern interface that enhances how you interact with your music library.
+        </p>
+    </div>
 
-    <h2>How It Works</h2>
-    <p>
-        1. Sign up or log in with your Spotify account.<br>
-        2. Explore your personalized recommendations, or use our advanced filters to fine-tune the type of music you want to discover.<br>
-        3. Add your favorite tracks to your playlist or create a new one, all seamlessly integrated with your Spotify account.<br>
-    </p>
-    
+    <!-- Features grid -->
+    <div class="features-grid">
+        <div class="feature-card">
+            <h3>Intelligent Recommendations</h3>
+            <p>Discover recommendations based on your top track from your Spotify account.</p>
+        </div>
+        
+        <div class="feature-card">
+            <h3>Advanced Playlist Tools</h3>
+            <p>Create and manage playlists with bulk operations, smart track addition, and the ability to add multiple tracks to playlists simultaneously.</p>
+        </div>
+        
+        <div class="feature-card">
+            <h3>Track Search & Discovery</h3>
+            <p>Find similar tracks with our "Find Similar Tracks" feature, search the entire Spotify catalog, and explore music that matches your taste.</p>
+        </div>
+        
+        <div class="feature-card">
+            <h3>Full Playback Control</h3>
+            <p>Control your Spotify playback directly from Customify - play, pause, skip, shuffle, repeat, and adjust volume with real-time synchronization.</p>
+        </div>
+        
+        <div class="feature-card">
+            <h3>Top Tracks Analytics</h3>
+            <p>View your most played tracks across last 4 weeks and get recommendations based on your favorites.</p>
+        </div>
+        
+        <div class="feature-card">
+            <h3>Real-time Integration</h3>
+            <p>Seamless Spotify Web API integration with OAuth authentication ensures your data is always up-to-date and secure.</p>
+        </div>
+    </div>
+
+    <!-- How it works block -->
+    <div class="how-it-works-block">
+        <h2>How Customify Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <p>Authenticate with your Spotify account using secure OAuth 2.0 authorization</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <p>Access your profile to view top tracks, get personalized recommendations, and control playback</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <p>Use advanced features like bulk playlist operations, track search, and music discovery tools</p>
+            </div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <p>Enjoy enhanced music management with real-time playback control and smart recommendations</p>
+            </div>
+        </div>
+    </div>
 </div>
 
 </body>
